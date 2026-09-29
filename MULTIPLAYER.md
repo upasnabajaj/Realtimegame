@@ -19,16 +19,19 @@ The latest service probe returned `CONFIGURATION_NOT_FOUND` from Authentication.
 stillward/runs/mountain-v1/
   players/{temporaryFirebaseUid}
     name, x, y, vx, vy, angle, checkpoint, grounded,
-    left, right, next, tx, ty, reaching, wind, slip, v, updatedAt
+    left, right, next, tx, ty, reaching, wind, slip, v, epoch, updatedAt
   encounters/
+    epoch: replay generation
+    winner: {author, name, epoch, at}
+    finishers/{uid}: {author, name, epoch, at}
     rocks/{stableRockId}: "rock-{stableRockId}"
     events/rock-{stableRockId}
-      id, rock, type, author, name, requestedAt, startedAt, duration
+      id, rock, type, author, name, requestedAt, startedAt, duration, epoch
 ```
 
 Movement sends at most eight packets per second, plus a ten-second resting heartbeat. A 160ms playback buffer smooths remote movement; extrapolation is bounded to 120ms. Remote avatars reuse the existing renderer and world coordinates, with a muted scarf accent and small name. Cameras and all local input/physics remain local.
 
-The compact `encounters` subtree is transacted only on a special-rock catch. Dormancy and the immutable event are committed together, preventing both double activations and a spent rock without an event. There are only 21 such records per run; event history is bounded and does not contain movement. The current run persists when everyone leaves, so reconnects cannot accidentally revive spent rocks. Intentionally starting a new run requires changing the run ID and corresponding allowed rules.
+The compact `encounters` subtree is transacted only on a special-rock catch. Dormancy and the immutable event are committed together, preventing both double activations and a spent rock without an event. There are only 21 such records per run; event history is bounded and does not contain movement. The current run persists when everyone leaves, so reconnects cannot accidentally revive spent rocks. After all currently active climbers finish and the ending has settled, a quiet CLIMB AGAIN action appears. It increments the shared epoch and clears encounters in a transaction; clients reset their poses, checkpoints, conditions and camera. The transport checks current presence before proposing replay. A player joining during that small read/commit window joins the fresh climb. Epoch tags prevent old packets or pending claims from affecting the new run.
 
 ## Effect semantics
 
@@ -50,6 +53,6 @@ No browser storage is used to transport shared state. It stores only the local r
 - `npm run firebase:check`: creates one temporary anonymous identity, checks database read access, then deletes that identity.
 - `npm run firebase:test`: opt-in live Auth/Realtime Database REST integration test using a disposable `test-{ownerUid}` run. Tests three identities, movement, race resolution, timestamps, shared events, and removal; cleans up its run and identities. It never consumes production special rocks.
 
-The REST test is not a substitute for browser WebSocket/presence testing. To finish acceptance, open two actual browsers and verify remote movement, a cross-player activation, overlapping events, reload, tab close, airplane-mode/reconnection, and a phone viewport. Browser automation was blocked by an account usage-limit approval failure during this task; it was not bypassed.
+The REST test is not a substitute for browser WebSocket/presence testing. To finish acceptance, open two actual browsers and verify remote movement, a cross-player activation, overlapping events, reload, tab close, airplane-mode/reconnection, and a phone viewport. Desktop, summit composition and a fixed 390×844 phone layout were inspected in the browser. Live multi-browser acceptance remains blocked by Authentication returning CONFIGURATION_NOT_FOUND. The generated security rules have not been deployed or emulator-validated.
 
 Official references: [Firebase web presence](https://firebase.google.com/docs/database/web/offline-capabilities), [anonymous authentication](https://firebase.google.com/docs/auth/web/anonymous-auth), and [CDN SDK loading](https://firebase.google.com/docs/web/alt-setup).

@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { Summit } from '../src/summit.js';
+import { Climber } from '../src/climber.js';
+import { holds, HEIGHT } from '../src/level.js';
+const world={particles:[]}, messages=[];let rumbles=0;
+const ending=new Summit(world,{summit(){rumbles++;}},text=>messages.push(text));
+const player=new Climber(), lip=holds.find(h=>h.y>=HEIGHT+12&&Math.abs(h.x)<100);
+assert(lip);player.checkpoint=3;player.x=lip.x;player.y=HEIGHT-30;player.grips=[lip,null];player.grounded=false;
+let arrivals=0;
+for(let i=0;i<100;i++)player.update(1/60,{active:false},()=>{},cp=>{assert.equal(cp,4);arrivals++;});
+assert(player.finished);assert.equal(player.y,HEIGHT+25);assert.equal(arrivals,1);assert(player.grips.every(g=>g===null));
+ending.arrive();ending.winner({name:'CLIMBER TEST',at:1000},1000);
+for(let i=0;i<900;i++)ending.update(1/60,player);
+assert.equal(rumbles,1);assert.equal(messages.length,1);assert(world.reveal>.99);
+ending.winner({name:'CLIMBER NEXT',at:2000},2000);ending.update(1,player);assert.equal(rumbles,1);
+ending.reset();assert.equal(world.reveal,0);assert.equal(world.tremor,0);assert.equal(ending.event,null);
+console.log('Physical summit mantle, single arrival, reveal, one-shot reaction and ending reset pass.');

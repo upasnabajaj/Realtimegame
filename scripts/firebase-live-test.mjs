@@ -27,7 +27,7 @@ async function claim(account, rock) {
     if(!read.ok)throw new Error(`Read encounters denied (${read.status}); install the scoped database rules.`);
     const current=await read.json();
     const event={id:`rock-${rock.id}`,rock:rock.id,type:rock.effect,author:account.localId,name:account.name,
-      requestedAt,startedAt:{'.sv':'timestamp'},duration:DEFINITIONS[rock.effect].duration*1000};
+      epoch:0,requestedAt,startedAt:{'.sv':'timestamp'},duration:DEFINITIONS[rock.effect].duration*1000};
     const next=claimEncounter(current,event);if(!next)return false;
     const write=await request(account,'encounters',{method:'PUT',headers:{'If-Match':read.headers.get('etag')},body:JSON.stringify(next)});
     if(write.ok)return true;

@@ -13,6 +13,13 @@ export class Sound {
     oscillator.connect(gain); gain.connect(this.ctx.destination);
     oscillator.start(); oscillator.stop(now + .13);
   }
+  summit() {
+    if(!this.ctx || this.ctx.state!=='running')return;
+    const ctx=this.ctx, now=ctx.currentTime, tone=ctx.createOscillator(), gain=ctx.createGain();
+    tone.type='sine';tone.frequency.setValueAtTime(52,now);tone.frequency.exponentialRampToValueAtTime(31,now+1.8);
+    gain.gain.setValueAtTime(.001,now);gain.gain.linearRampToValueAtTime(.055,now+.3);gain.gain.exponentialRampToValueAtTime(.001,now+2);
+    tone.connect(gain);gain.connect(ctx.destination);tone.start();tone.stop(now+2.1);
+  }
   condition(type) {
     if (!this.ctx || this.ctx.state !== 'running') return;
     const ctx = this.ctx, now = ctx.currentTime;

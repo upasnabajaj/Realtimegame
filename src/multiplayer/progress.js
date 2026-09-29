@@ -7,6 +7,7 @@ export class Progress {
   constructor(run, session, local, reload = false) {
     this.key = `stillward:${run}`; this.session = session; this.local = local;
     this.saved = read(session, this.key) || read(local, this.key);
+    this.winnerSeen=this.saved?.winnerSeen||null;
     this.name = reload && safeName(this.saved?.name) ? this.saved.name :
       `CLIMBER ${randomId().replaceAll('-', '').slice(0, 4).toUpperCase()}`;
     const authors=read(session, `${this.key}:authors`);
@@ -21,10 +22,10 @@ export class Progress {
   restore(player) {
     const saved = this.saved;
     if (!validPlayer(saved)) return false;
-    player.checkpoint = saved.checkpoint;
+    player.checkpoint = saved.checkpoint;player.epoch=saved.epoch||0;
     const grips = [holds[saved.left] || null, holds[saved.right] || null];
     const grip = grips.find(Boolean);
-    if (grip && Math.hypot(grip.x - saved.x, grip.y - saved.y) < 120) {
+    if (saved.checkpoint!==4 && grip && Math.hypot(grip.x - saved.x, grip.y - saved.y) < 120) {
       player.x = saved.x; player.y = saved.y; player.grips = grips; player.grounded = false;
     } else {
       const ledge = ledges[player.checkpoint];
@@ -35,7 +36,7 @@ export class Progress {
     return true;
   }
   save(player) {
-    const data = encodePlayer(player, this.name);
+    const data = {...encodePlayer(player, this.name),winnerSeen:this.winnerSeen};
     if (!validPlayer(data)) return;
     write(this.session, this.key, data); write(this.local, this.key, data);
     // Keep the current author fresh so a refresh during a condition preserves immunity.

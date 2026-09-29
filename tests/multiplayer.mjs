@@ -1,3 +1,4 @@
+import { finishRun, replayRun } from '../src/multiplayer/run.js';
 import assert from 'node:assert/strict';
 import { Conditions, NORMAL, DEFINITIONS } from '../src/conditions.js';
 import { Climber } from '../src/climber.js';
@@ -23,8 +24,7 @@ class Hub {
         t.callbacks=callbacks; t.initial=initial; hub.clients.push(t);
         callbacks.identity(id); callbacks.status('online');
         for(const [uid,state] of Object.entries(hub.players))if(uid!==id)callbacks.player(uid,state);
-        for(const rock of Object.keys(hub.encounters?.rocks||{}))callbacks.rock(Number(rock));
-        for(const event of Object.values(hub.encounters?.events||{}))callbacks.event(event);
+        callbacks.encounters(hub.encounters||{epoch:0});
         await t.publish(initial());
       },
       async publish(state) {
@@ -39,8 +39,18 @@ class Hub {
         const next=claimEncounter(hub.encounters,{...event,startedAt:hub.time});
         if(!next)return false;
         hub.encounters=next;
-        for(const other of hub.clients)if(other.connected){other.callbacks.rock(event.rock);other.callbacks.event(event);}
+        for(const other of hub.clients)if(other.connected)other.callbacks.encounters(next);
         return true;
+      },
+      async finish(arrival) {
+        await t.publish(t.initial());
+        const next=finishRun(hub.encounters,arrival);if(!next)return false;hub.encounters=next;
+        for(const other of hub.clients)if(other.connected)other.callbacks.encounters(next);return true;
+      },
+      async replay() {
+        const next=replayRun({players:hub.players,encounters:hub.encounters},id,hub.time);
+        if(!next)return false;hub.encounters=next.encounters;
+        for(const other of hub.clients)if(other.connected)other.callbacks.encounters(hub.encounters);return true;
       },
       prune(uid,at) {if(hub.players[uid]?.updatedAt===at&&at<hub.time-STALE_MS*2)delete hub.players[uid];},
       disconnect() {
@@ -49,8 +59,7 @@ class Hub {
       },
       async reconnect() {
         t.connected=true; t.callbacks.status('online');
-        for(const rock of Object.keys(hub.encounters?.rocks||{}))t.callbacks.rock(Number(rock));
-        for(const event of Object.values(hub.encounters?.events||{}))t.callbacks.event(event);
+        t.callbacks.encounters(hub.encounters||{epoch:0});
         await t.publish(t.initial());
       },
       async stop() {t.disconnect();hub.clients=hub.clients.filter(c=>c!==t);},
@@ -158,7 +167,7 @@ await Promise.resolve();await Promise.resolve();await Promise.resolve();
 assert(calls.indexOf('arm-disconnect')<calls.indexOf('write'));assert(adapter.ready);
 subscriptions.find(s=>s.path==='.info/connected').callback({val:()=>false});
 assert.equal(await adapter.publish(base),false);
-await adapter.stop();assert(calls.includes('offline'));assert(calls.filter(c=>c==='unsubscribe').length===7);
+await adapter.stop();assert(calls.includes('offline'));assert(calls.filter(c=>c==='unsubscribe').length===6);
 console.log('Multiplayer: three-player immunity, seven effects, atomic races, same-type overlap, replay/expiry, refresh, separate tabs, disconnect/reconnect, interpolation, throttling, and Firebase presence lifecycle pass.');
 // Tab suspension must not extend a shared condition or leave old falling stones.
 const suspended = new Conditions();let wall=100000;
@@ -169,3 +178,22 @@ assert.equal(suspended.active.size,0);assert.equal(suspended.debris.length,0);as
 const corrupt=new Storage();corrupt.setItem('stillward:test:authors','{"not":"an array"}');
 assert.doesNotThrow(()=>new Progress('test',corrupt,null,true));
 assert.doesNotThrow(()=>new Progress('test',null,null,true));
+
+// Shared summit winner and complete epoch reset exercise the actual coordinator.
+const endHub=new Hub(),finishers=[client(endHub),client(endHub),client(endHub)];
+for(const p of finishers)await p.game.start();
+await finishers[0].game.grab(winds[0]);
+for(const [i,p] of finishers.entries()){
+  p.player.y=6425;p.player.finished=true;p.player.checkpoint=4;
+  await p.transport.finish({author:p.game.uid,name:p.progress.name,epoch:0,at:endHub.time});
+  if(i<2)assert.equal(await p.game.replay(),false,'Wait for other climbers');
+}
+assert.equal(endHub.encounters.winner.author,finishers[0].game.uid);
+endHub.time+=10000;
+const restarts=await Promise.all(finishers.map(p=>p.game.replay()));
+assert.equal(restarts.filter(Boolean).length,1);
+for(const p of finishers){assert.equal(p.player.epoch,1);assert.equal(p.player.checkpoint,0);assert(!p.player.finished);assert.equal(p.conditions.spent.size,0);assert.equal(p.conditions.active.size,0);}
+assert.equal(claimEncounter(endHub.encounters,{...h.encounters.events[`rock-${winds[0].id}`],epoch:0}),undefined);
+assert(await finishers[0].game.grab(winds[0]),'New run re-arms special rocks');
+assert.equal(finishers[0].conditions.active.size,0);assert.equal(finishers[1].conditions.active.size,1);
+console.log('Shared summit winner, waiting for finishers, concurrent replay, epoch reset and re-armed rock immunity pass.');

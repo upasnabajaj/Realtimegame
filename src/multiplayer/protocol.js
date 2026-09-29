@@ -13,7 +13,7 @@ const rounded = n => Math.round(n * 10) / 10;
 export const safeName = name => typeof name === 'string' && /^CLIMBER [A-Z0-9]{4}$/.test(name);
 export function encodePlayer(p, name) {
   return {
-    v: VERSION, name, x: rounded(p.x), y: rounded(p.y), vx: rounded(p.vx), vy: rounded(p.vy),
+    v: VERSION, epoch:p.epoch||0, name, x: rounded(p.x), y: rounded(p.y), vx: rounded(p.vx), vy: rounded(p.vy),
     angle: rounded(p.angle), checkpoint: p.checkpoint, grounded: p.grounded,
     left: p.grips[0]?.id ?? -1, right: p.grips[1]?.id ?? -1, next: p.next,
     tx: rounded(p.target?.x ?? p.x), ty: rounded(p.target?.y ?? p.y), reaching: !!p.target,
@@ -21,7 +21,7 @@ export function encodePlayer(p, name) {
   };
 }
 export function validPlayer(p) {
-  return p && p.v === VERSION && safeName(p.name) && finite(p.x, -10000, 10000) && finite(p.y, -1000, 7000)
+  return p && Number.isInteger(p.epoch??0) && (p.epoch??0)>=0 && p.v === VERSION && safeName(p.name) && finite(p.x, -10000, 10000) && finite(p.y, -1000, 7000)
     && finite(p.vx, -3000, 3000) && finite(p.vy, -4000, 4000) && finite(p.angle, -2, 2)
     && Number.isInteger(p.checkpoint) && p.checkpoint >= 0 && p.checkpoint <= 4
     && [p.left, p.right].every(id => Number.isInteger(id) && id >= -1 && id < holds.length)
@@ -37,8 +37,9 @@ export function validEvent(e, now) {
     && finite(e.startedAt, 0, now + 2000) && finite(e.requestedAt, e.startedAt - 3000, e.startedAt + 2000);
 }
 export function claimEncounter(current, event) {
+  if ((current?.epoch||0)!==(event.epoch||0))return;
   if (current?.rocks?.[event.rock] || current?.events?.[event.id]) return;
-  return { rocks: { ...current?.rocks, [event.rock]: event.id }, events: { ...current?.events, [event.id]: event } };
+  return { ...current, epoch:event.epoch||0, rocks: { ...current?.rocks, [event.rock]: event.id }, events: { ...current?.events, [event.id]: event } };
 }
 
 // A short playback buffer absorbs normal network jitter. Only body motion is

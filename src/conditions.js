@@ -31,6 +31,11 @@ export class Conditions {
     this.modifiers = { ...NORMAL };
   }
 
+  reset() {
+    this.active.clear();this.spent.clear();this.flashes.clear();this.debris=[];
+    this.gripId=null;this.gripAge=0;this.hitCooldown=0;this.modifiers={...NORMAL};
+  }
+
   trigger(type, rock = null, event = null) {
     const key = event?.id || type;
     const age = event ? Math.max(0, (event.clock() - event.startedAt) / 1000) : 0;

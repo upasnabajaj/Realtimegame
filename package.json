@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "python3 -m http.server 5173",
-    "test": "node tests/route.mjs && node tests/conditions.mjs && node tests/multiplayer.mjs",
+    "test": "node tests/route.mjs && node tests/conditions.mjs && node tests/multiplayer.mjs && node tests/summit.mjs",
     "firebase:check": "node scripts/firebase-check.mjs",
     "firebase:test": "node scripts/firebase-live-test.mjs",
-    "firebase:rules": "node scripts/database-rules.mjs"
+    "firebase:rules": "node scripts/database-rules.mjs",
+    "build": "node scripts/build.mjs"
   }
 }

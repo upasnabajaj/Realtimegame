@@ -1,4 +1,5 @@
 import { claimEncounter, STALE_MS, randomId } from './protocol.js';
+import { finishRun, replayRun } from './run.js';
 
 // Only this module knows Firebase. Loading it never blocks the local frame loop.
 export class FirebaseTransport {
@@ -40,11 +41,11 @@ export class FirebaseTransport {
       const receive = snapshot => { if (snapshot.key !== this.uid) callbacks.player(snapshot.key, snapshot.val()); };
       this.listeners.push(onChildAdded(players, receive, error), onChildChanged(players, receive, error),
         onChildRemoved(players, snapshot => callbacks.remove(snapshot.key), error));
-      const rocks = ref(this.db, `${this.base}/encounters/rocks`);
-      this.listeners.push(onChildAdded(rocks, snapshot => callbacks.rock(Number(snapshot.key)), error));
-      const events = ref(this.db, `${this.base}/encounters/events`);
-      // At most one immutable event per special rock (21 for this mountain).
-      this.listeners.push(onChildAdded(events, snapshot => callbacks.event(snapshot.val()), error));
+      this.listeners.push(onValue(ref(this.db, `${this.base}/encounters`), snapshot => {
+        const state=snapshot.val()||{epoch:0};
+        if(callbacks.encounters)callbacks.encounters(state);
+        else {for(const id of Object.keys(state.rocks||{}))callbacks.rock(Number(id));for(const event of Object.values(state.events||{}))callbacks.event(event);}
+      }, error));
     } catch (error) { callbacks.error(error); callbacks.status('offline'); }
   }
   async establishPresence(generation) {
@@ -67,6 +68,20 @@ export class FirebaseTransport {
     const result = await this.sdk.runTransaction(path,
       current => this.connected && !this.disposed ? claimEncounter(current, { ...event, startedAt: this.sdk.serverTimestamp() }) : undefined,
       { applyLocally: false });
+    return result.committed;
+  }
+  async finish(arrival) {
+    if(!this.ready || this.disposed)return false;
+    await this.publish(this.initial());
+    const result=await this.sdk.runTransaction(this.sdk.ref(this.db,`${this.base}/encounters`),
+      value=>this.connected&&!this.disposed?finishRun(value,{...arrival,at:this.sdk.serverTimestamp()}):undefined,{applyLocally:false});
+    return result.committed;
+  }
+  async replay() {
+    if(!this.ready || this.disposed)return false;
+    const snapshot=await this.sdk.get(this.sdk.ref(this.db,`${this.base}/players`));
+    const result=await this.sdk.runTransaction(this.sdk.ref(this.db,`${this.base}/encounters`),
+      encounters=>this.connected&&!this.disposed?replayRun({players:snapshot.val(),encounters},this.uid,this.now())?.encounters:undefined,{applyLocally:false});
     return result.committed;
   }
   prune(id, updatedAt) {

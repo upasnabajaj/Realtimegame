@@ -1,6 +1,6 @@
 # Stillward
 
-A self-contained illustrated climbing game. No external assets or runtime dependencies.
+A self-contained illustrated climbing game. Original procedural art and generated audio; Firebase is the only network service.
 
 ## Play locally
 
@@ -57,3 +57,11 @@ Run `npm test` (or both `node tests/route.mjs` and `node tests/conditions.mjs`).
 Firebase integration is configured for the supplied project. See [MULTIPLAYER.md](MULTIPLAYER.md) for the required anonymous-provider/rules setup, data layout, deployment, and test commands. Normal special-rock catches now publish a shared event: its author is immune and every other connected player receives the condition. The opt-in developer shortcuts remain local test triggers.
 
 Local controls and physics do not wait for the network. Remote climbers use the same illustrated renderer, an understated scarf accent, and small temporary names. Progress survives refresh locally; shared players, spent rocks, and events come from Realtime Database.
+
+## Production build and ending
+
+`npm run build` creates `dist/` containing only the static game. Publish that folder to GitHub Pages; all game paths are relative, including on a repository subpath. The build removes developer shortcuts and excludes test pages, scripts and configuration files. No build dependencies are required beyond Node.
+
+The final hold leads to a brief physical mantle onto the summit, a landscape reveal, one quiet tremor and the first climber’s name. Later arrivals receive a short acknowledgment. Shared replay waits for active climbers to finish; a new epoch resets used rocks, effects and local climbing state. Offline replay remains local.
+
+Release limitation: Firebase Authentication still returns `CONFIGURATION_NOT_FOUND`; live multiplayer acceptance and rules deployment remain outstanding. Automated three-client tests are deterministic protocol tests, not evidence of a live Firebase session.
