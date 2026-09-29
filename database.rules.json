@@ -1,0 +1,790 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "stillward": {
+      "runs": {
+        "$run": {
+          ".read": "auth != null && ($run === 'mountain-v1' || $run.beginsWith('test-'))",
+          ".write": "auth != null && $run === 'test-' + auth.uid && !newData.exists()",
+          "players": {
+            "$uid": {
+              ".write": "auth != null && ($run === 'mountain-v1' || $run.beginsWith('test-')) && (auth.uid === $uid || (!newData.exists() && data.child('updatedAt').isNumber() && data.child('updatedAt').val() < now - 90000))",
+              ".validate": "newData.hasChildren(['v','name','x','y','vx','vy','angle','checkpoint','grounded','left','right','next','tx','ty','reaching','wind','slip','updatedAt'])",
+              "v": {
+                ".validate": "newData.val() === 1"
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().matches(/^CLIMBER [A-Z0-9]{4}$/)"
+              },
+              "x": {
+                ".validate": "newData.isNumber() && newData.val() >= -10000 && newData.val() <= 10000"
+              },
+              "y": {
+                ".validate": "newData.isNumber() && newData.val() >= -1000 && newData.val() <= 7000"
+              },
+              "vx": {
+                ".validate": "newData.isNumber() && newData.val() >= -3000 && newData.val() <= 3000"
+              },
+              "vy": {
+                ".validate": "newData.isNumber() && newData.val() >= -4000 && newData.val() <= 4000"
+              },
+              "angle": {
+                ".validate": "newData.isNumber() && newData.val() >= -2 && newData.val() <= 2"
+              },
+              "checkpoint": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4 && newData.val() % 1 === 0"
+              },
+              "grounded": {
+                ".validate": "newData.isBoolean()"
+              },
+              "left": {
+                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 308 && newData.val() % 1 === 0"
+              },
+              "right": {
+                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 308 && newData.val() % 1 === 0"
+              },
+              "next": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1 && newData.val() % 1 === 0"
+              },
+              "tx": {
+                ".validate": "newData.isNumber() && newData.val() >= -20000 && newData.val() <= 20000"
+              },
+              "ty": {
+                ".validate": "newData.isNumber() && newData.val() >= -20000 && newData.val() <= 20000"
+              },
+              "reaching": {
+                ".validate": "newData.isBoolean()"
+              },
+              "wind": {
+                ".validate": "newData.isNumber() && newData.val() >= -1000 && newData.val() <= 1000"
+              },
+              "slip": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+              },
+              "updatedAt": {
+                ".validate": "newData.isNumber() && newData.val() >= now - 5000 && newData.val() <= now + 1000"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "encounters": {
+            ".write": "auth != null && ($run === 'mountain-v1' || $run.beginsWith('test-')) && newData.exists() && newData.hasChildren(['rocks','events'])",
+            ".validate": "(!data.child('rocks/25').exists() || (newData.child('rocks/25').val() === data.child('rocks/25').val() && newData.child('events/rock-25').exists())) && (!data.child('rocks/52').exists() || (newData.child('rocks/52').val() === data.child('rocks/52').val() && newData.child('events/rock-52').exists())) && (!data.child('rocks/82').exists() || (newData.child('rocks/82').val() === data.child('rocks/82').val() && newData.child('events/rock-82').exists())) && (!data.child('rocks/97').exists() || (newData.child('rocks/97').val() === data.child('rocks/97').val() && newData.child('events/rock-97').exists())) && (!data.child('rocks/112').exists() || (newData.child('rocks/112').val() === data.child('rocks/112').val() && newData.child('events/rock-112').exists())) && (!data.child('rocks/130').exists() || (newData.child('rocks/130').val() === data.child('rocks/130').val() && newData.child('events/rock-130').exists())) && (!data.child('rocks/151').exists() || (newData.child('rocks/151').val() === data.child('rocks/151').val() && newData.child('events/rock-151').exists())) && (!data.child('rocks/163').exists() || (newData.child('rocks/163').val() === data.child('rocks/163').val() && newData.child('events/rock-163').exists())) && (!data.child('rocks/172').exists() || (newData.child('rocks/172').val() === data.child('rocks/172').val() && newData.child('events/rock-172').exists())) && (!data.child('rocks/181').exists() || (newData.child('rocks/181').val() === data.child('rocks/181').val() && newData.child('events/rock-181').exists())) && (!data.child('rocks/193').exists() || (newData.child('rocks/193').val() === data.child('rocks/193').val() && newData.child('events/rock-193').exists())) && (!data.child('rocks/205').exists() || (newData.child('rocks/205').val() === data.child('rocks/205').val() && newData.child('events/rock-205').exists())) && (!data.child('rocks/223').exists() || (newData.child('rocks/223').val() === data.child('rocks/223').val() && newData.child('events/rock-223').exists())) && (!data.child('rocks/229').exists() || (newData.child('rocks/229').val() === data.child('rocks/229').val() && newData.child('events/rock-229').exists())) && (!data.child('rocks/238').exists() || (newData.child('rocks/238').val() === data.child('rocks/238').val() && newData.child('events/rock-238').exists())) && (!data.child('rocks/244').exists() || (newData.child('rocks/244').val() === data.child('rocks/244').val() && newData.child('events/rock-244').exists())) && (!data.child('rocks/253').exists() || (newData.child('rocks/253').val() === data.child('rocks/253').val() && newData.child('events/rock-253').exists())) && (!data.child('rocks/259').exists() || (newData.child('rocks/259').val() === data.child('rocks/259').val() && newData.child('events/rock-259').exists())) && (!data.child('rocks/268').exists() || (newData.child('rocks/268').val() === data.child('rocks/268').val() && newData.child('events/rock-268').exists())) && (!data.child('rocks/274').exists() || (newData.child('rocks/274').val() === data.child('rocks/274').val() && newData.child('events/rock-274').exists())) && (!data.child('rocks/280').exists() || (newData.child('rocks/280').val() === data.child('rocks/280').val() && newData.child('events/rock-280').exists()))",
+            "rocks": {
+              "25": {
+                ".validate": "newData.val() === 'rock-25' && newData.parent().parent().child('events/rock-25').exists()"
+              },
+              "52": {
+                ".validate": "newData.val() === 'rock-52' && newData.parent().parent().child('events/rock-52').exists()"
+              },
+              "82": {
+                ".validate": "newData.val() === 'rock-82' && newData.parent().parent().child('events/rock-82').exists()"
+              },
+              "97": {
+                ".validate": "newData.val() === 'rock-97' && newData.parent().parent().child('events/rock-97').exists()"
+              },
+              "112": {
+                ".validate": "newData.val() === 'rock-112' && newData.parent().parent().child('events/rock-112').exists()"
+              },
+              "130": {
+                ".validate": "newData.val() === 'rock-130' && newData.parent().parent().child('events/rock-130').exists()"
+              },
+              "151": {
+                ".validate": "newData.val() === 'rock-151' && newData.parent().parent().child('events/rock-151').exists()"
+              },
+              "163": {
+                ".validate": "newData.val() === 'rock-163' && newData.parent().parent().child('events/rock-163').exists()"
+              },
+              "172": {
+                ".validate": "newData.val() === 'rock-172' && newData.parent().parent().child('events/rock-172').exists()"
+              },
+              "181": {
+                ".validate": "newData.val() === 'rock-181' && newData.parent().parent().child('events/rock-181').exists()"
+              },
+              "193": {
+                ".validate": "newData.val() === 'rock-193' && newData.parent().parent().child('events/rock-193').exists()"
+              },
+              "205": {
+                ".validate": "newData.val() === 'rock-205' && newData.parent().parent().child('events/rock-205').exists()"
+              },
+              "223": {
+                ".validate": "newData.val() === 'rock-223' && newData.parent().parent().child('events/rock-223').exists()"
+              },
+              "229": {
+                ".validate": "newData.val() === 'rock-229' && newData.parent().parent().child('events/rock-229').exists()"
+              },
+              "238": {
+                ".validate": "newData.val() === 'rock-238' && newData.parent().parent().child('events/rock-238').exists()"
+              },
+              "244": {
+                ".validate": "newData.val() === 'rock-244' && newData.parent().parent().child('events/rock-244').exists()"
+              },
+              "253": {
+                ".validate": "newData.val() === 'rock-253' && newData.parent().parent().child('events/rock-253').exists()"
+              },
+              "259": {
+                ".validate": "newData.val() === 'rock-259' && newData.parent().parent().child('events/rock-259').exists()"
+              },
+              "268": {
+                ".validate": "newData.val() === 'rock-268' && newData.parent().parent().child('events/rock-268').exists()"
+              },
+              "274": {
+                ".validate": "newData.val() === 'rock-274' && newData.parent().parent().child('events/rock-274').exists()"
+              },
+              "280": {
+                ".validate": "newData.val() === 'rock-280' && newData.parent().parent().child('events/rock-280').exists()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            },
+            "events": {
+              "$other": {
+                ".validate": false
+              },
+              "rock-25": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-25' && newData.child('rock').val() === 25 && newData.child('type').val() === 'WIND' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/25').val() === 'rock-25')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-52": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-52' && newData.child('rock').val() === 52 && newData.child('type').val() === 'SLOW' && newData.child('duration').val() === 6000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/52').val() === 'rock-52')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-82": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-82' && newData.child('rock').val() === 82 && newData.child('type').val() === 'SPEED' && newData.child('duration').val() === 6000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/82').val() === 'rock-82')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-97": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-97' && newData.child('rock').val() === 97 && newData.child('type').val() === 'WIND' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/97').val() === 'rock-97')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-112": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-112' && newData.child('rock').val() === 112 && newData.child('type').val() === 'LOW_GRAVITY' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/112').val() === 'rock-112')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-130": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-130' && newData.child('rock').val() === 130 && newData.child('type').val() === 'ROCKFALL' && newData.child('duration').val() === 7000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/130').val() === 'rock-130')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-151": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-151' && newData.child('rock').val() === 151 && newData.child('type').val() === 'ICE' && newData.child('duration').val() === 9000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/151').val() === 'rock-151')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-163": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-163' && newData.child('rock').val() === 163 && newData.child('type').val() === 'DARKNESS' && newData.child('duration').val() === 7000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/163').val() === 'rock-163')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-172": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-172' && newData.child('rock').val() === 172 && newData.child('type').val() === 'SLOW' && newData.child('duration').val() === 6000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/172').val() === 'rock-172')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-181": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-181' && newData.child('rock').val() === 181 && newData.child('type').val() === 'ICE' && newData.child('duration').val() === 9000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/181').val() === 'rock-181')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-193": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-193' && newData.child('rock').val() === 193 && newData.child('type').val() === 'ROCKFALL' && newData.child('duration').val() === 7000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/193').val() === 'rock-193')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-205": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-205' && newData.child('rock').val() === 205 && newData.child('type').val() === 'LOW_GRAVITY' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/205').val() === 'rock-205')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-223": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-223' && newData.child('rock').val() === 223 && newData.child('type').val() === 'WIND' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/223').val() === 'rock-223')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-229": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-229' && newData.child('rock').val() === 229 && newData.child('type').val() === 'LOW_GRAVITY' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/229').val() === 'rock-229')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-238": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-238' && newData.child('rock').val() === 238 && newData.child('type').val() === 'SPEED' && newData.child('duration').val() === 6000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/238').val() === 'rock-238')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-244": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-244' && newData.child('rock').val() === 244 && newData.child('type').val() === 'DARKNESS' && newData.child('duration').val() === 7000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/244').val() === 'rock-244')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-253": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-253' && newData.child('rock').val() === 253 && newData.child('type').val() === 'ICE' && newData.child('duration').val() === 9000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/253').val() === 'rock-253')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-259": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-259' && newData.child('rock').val() === 259 && newData.child('type').val() === 'SLOW' && newData.child('duration').val() === 6000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/259').val() === 'rock-259')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-268": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-268' && newData.child('rock').val() === 268 && newData.child('type').val() === 'ROCKFALL' && newData.child('duration').val() === 7000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/268').val() === 'rock-268')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-274": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-274' && newData.child('rock').val() === 274 && newData.child('type').val() === 'LOW_GRAVITY' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/274').val() === 'rock-274')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "rock-280": {
+                ".validate": "data.exists() ? (newData.child('id').val() === data.child('id').val() && newData.child('rock').val() === data.child('rock').val() && newData.child('type').val() === data.child('type').val() && newData.child('author').val() === data.child('author').val() && newData.child('name').val() === data.child('name').val() && newData.child('requestedAt').val() === data.child('requestedAt').val() && newData.child('startedAt').val() === data.child('startedAt').val() && newData.child('duration').val() === data.child('duration').val()) : (newData.hasChildren(['id','rock','type','author','name','requestedAt','startedAt','duration']) && newData.child('id').val() === 'rock-280' && newData.child('rock').val() === 280 && newData.child('type').val() === 'WIND' && newData.child('duration').val() === 8000 && newData.child('author').val() === auth.uid && newData.child('name').val() === root.child('stillward/runs').child($run).child('players').child(auth.uid).child('name').val() && newData.child('requestedAt').isNumber() && newData.child('requestedAt').val() >= now - 3000 && newData.child('requestedAt').val() <= now + 2000 && newData.child('startedAt').isNumber() && newData.child('startedAt').val() >= now - 5000 && newData.child('startedAt').val() <= now + 1000 && newData.parent().parent().child('rocks/280').val() === 'rock-280')",
+                "id": {
+                  ".validate": true
+                },
+                "rock": {
+                  ".validate": true
+                },
+                "type": {
+                  ".validate": true
+                },
+                "author": {
+                  ".validate": true
+                },
+                "name": {
+                  ".validate": true
+                },
+                "requestedAt": {
+                  ".validate": true
+                },
+                "startedAt": {
+                  ".validate": true
+                },
+                "duration": {
+                  ".validate": true
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}

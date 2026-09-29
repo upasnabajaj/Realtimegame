@@ -1,0 +1,13 @@
+{
+  "name": "stillward",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 5173",
+    "test": "node tests/route.mjs && node tests/conditions.mjs && node tests/multiplayer.mjs",
+    "firebase:check": "node scripts/firebase-check.mjs",
+    "firebase:test": "node scripts/firebase-live-test.mjs",
+    "firebase:rules": "node scripts/database-rules.mjs"
+  }
+}
