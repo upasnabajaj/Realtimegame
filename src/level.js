@@ -34,3 +34,25 @@ strangeRoutes.forEach((entries, section) => entries.forEach(([row, effect]) => {
   const rock = holds[section * 72 + row * 3 + 1];
   rock.effect = effect;
 }));
+
+// A broad common foothill and lateral connections: no player owns a route.
+ledges[0].x=-75;ledges[0].width=330;
+// Append only: existing hold IDs and special-rock identities stay unchanged.
+const originalHolds=holds.slice();
+const connects=(x,y)=>originalHolds.some(h=>h.y>y+8&&Math.hypot(h.x-x,h.y-y+30)<108);
+for(let section=0;section<4;section++){
+ for(let row=0;row<23;row++){
+  const a=holds[section*72+row*3],b=holds[section*72+row*3+2];
+  for(const side of [-1,1]){
+   const anchor=side<0?a:b;
+   const x=Math.max(-260,Math.min(260,anchor.x+side*(45+rand(row+section*81+side)*27)));
+   const y=anchor.y+18+rand(row*9+section)*15;
+   if(!connects(x,y)||holds.some(h=>Math.hypot(h.x-x,h.y-y)<30))continue;
+   holds.push({id:holds.length,x,y,w:15+rand(row*7+side)*10,seed:1800+holds.length});
+  }
+  if(row%2===0){
+   const x=(a.x+b.x)/2+Math.sin(row*2+section)*35,y=a.y+36;
+   if(connects(x,y)&&!holds.some(h=>Math.hypot(h.x-x,h.y-y)<28))holds.push({id:holds.length,x,y,w:14+rand(row)*9,seed:2400+holds.length});
+  }
+ }
+}

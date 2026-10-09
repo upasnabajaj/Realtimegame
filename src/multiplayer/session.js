@@ -1,7 +1,7 @@
 import { DEFINITIONS } from '../conditions.js';
 import { holds } from '../level.js';
 import { epochOf, canReplay } from './run.js';
-import { encodePlayer, validPlayer, validEvent, RemotePlayers, STALE_MS } from './protocol.js';
+import { playerColours, encodePlayer, validPlayer, validEvent, RemotePlayers, STALE_MS } from './protocol.js';
 
 const messages = {
   WIND: 'DISTURBED THE WIND', SLOW: 'WOKE THE WEIGHT', SPEED: 'QUICKENED THE MOUNTAIN',
@@ -110,7 +110,20 @@ export class Multiplayer {
       this.nextPrune = now + 20000;
       for(const [id, timestamp] of this.lastSeen)if(timestamp < this.transport.now()-STALE_MS*2)this.transport.prune(id,timestamp);
     }
-    return this.remotes.render(this.transport.now());
+    const remotes=this.remotes.render(this.transport.now());
+    // Every observer sorts the same live identities, avoiding random colour collisions.
+    const roster=[...new Set([this.uid,...this.remotes.entries.keys()].filter(Boolean))].sort();
+    const slot=Math.max(0,roster.indexOf(this.uid));
+    Object.assign(this.player,playerColours(this.progress.name,slot));
+    for(const remote of remotes){
+      const id=roster.find(id=>this.playerStates.get(id)?.name===remote.name);
+      Object.assign(remote,playerColours(remote.name,Math.max(0,roster.indexOf(id))));
+    }
+    // Only settle an untouched climber on the safe base, never move someone climbing.
+    if(this.player.count===0&&this.player.checkpoint===0&&this.player.grounded&&this.player.y<40&&!this.player.pending){
+      this.player.x=-195+(slot%8)*35;
+    }
+    return remotes;
   }
   stop() { this.disposed = true; this.progress.save(this.player); return this.transport.stop(); }
 }

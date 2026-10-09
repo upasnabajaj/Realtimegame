@@ -132,13 +132,14 @@ assert(b.conditions.spent.has(offlineRock.id));tick(h,[a,b,c],.1);
 assert.equal(b.conditions.active.size,0,'Expired effects are not replayed on reconnect');
 // Throttled movement and heartbeat, interpolated positions, NaN rejection.
 const traffic=new Hub(),sender=client(traffic),receiver=client(traffic);await sender.game.start();await receiver.game.start();
+sender.player.count=1;
 const initialWrites=sender.transport.writes;
 for(let frame=0;frame<60;frame++) {traffic.time+=1000/60;sender.player.x+=1;sender.game.update(frame*1000/60);await Promise.resolve();await Promise.resolve();await Promise.resolve();}
 assert(sender.transport.writes-initialWrites<=8);
 assert(receiver.game.remotes.render(traffic.time)[0].x> -95);
 const buffer=new RemotePlayers(),base={...encodePlayer(new Climber(),'CLIMBER TEST'),updatedAt:1000};
 buffer.receive('remote',base,1000);buffer.receive('remote',{...base,x:5,updatedAt:1200},1200);
-assert(Math.abs(buffer.render(1260)[0].x-(-45))<.001,'Playback position is interpolated halfway');
+assert(Math.abs(buffer.render(1260)[0].x-((base.x+5)/2))<.001,'Playback position is interpolated halfway');
 buffer.receive('invalid',{...base,x:NaN},1200);assert(!buffer.entries.has('invalid'));
 buffer.receive('old',{...base,updatedAt:1000},1000+STALE_MS+1);assert(!buffer.entries.has('old'));
 assert.equal(buffer.render(1000+STALE_MS+300).length,0);
@@ -197,3 +198,11 @@ assert.equal(claimEncounter(endHub.encounters,{...h.encounters.events[`rock-${wi
 assert(await finishers[0].game.grab(winds[0]),'New run re-arms special rocks');
 assert.equal(finishers[0].conditions.active.size,0);assert.equal(finishers[1].conditions.active.size,1);
 console.log('Shared summit winner, waiting for finishers, concurrent replay, epoch reset and re-armed rock immunity pass.');
+
+const appearanceHub=new Hub(),group=[client(appearanceHub),client(appearanceHub),client(appearanceHub)];
+for(const member of group)await member.game.start();
+for(const member of group)member.game.update(500);
+assert.equal(new Set(group.map(m=>m.player.jacket)).size,3,'Connected climbers have different jacket colours');
+assert.equal(new Set(group.map(m=>m.player.x)).size,3,'Players start at separate base positions');
+for(const member of group)assert(holds.some(h=>Math.hypot(h.x-member.player.x,h.y-member.player.y-13)<member.player.reach),'Every spawn has a reachable hold');
+console.log('Distinct three-player colours, separated spawns and reachable first holds pass.');

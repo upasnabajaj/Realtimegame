@@ -42,10 +42,10 @@
                 ".validate": "newData.isBoolean()"
               },
               "left": {
-                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 308 && newData.val() % 1 === 0"
+                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 452 && newData.val() % 1 === 0"
               },
               "right": {
-                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 308 && newData.val() % 1 === 0"
+                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 452 && newData.val() % 1 === 0"
               },
               "next": {
                 ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1 && newData.val() % 1 === 0"
