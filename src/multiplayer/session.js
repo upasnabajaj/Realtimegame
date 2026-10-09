@@ -71,7 +71,10 @@ export class Multiplayer {
     const rock = holds[event.rock];
     this.conditions.flashes.set(rock.id, 1); this.feedback(rock);
     // Immunity belongs to the immutable author of THIS event, not to an effect type.
-    if (event.author === this.uid || this.progress.owns(event.author)) return;
+    if (event.author === this.uid || this.progress.owns(event.author)) {
+      if(event.author===this.uid)this.notice(`${event.type.replaceAll('_',' ')} · SENT TO OTHER CLIMBERS`,2400);
+      return;
+    }
     this.conditions.trigger(event.type, null, {
       id: event.id, startedAt: event.startedAt, clock: () => this.transport.now(),
       direction: event.rock % 2 ? 1 : -1,
@@ -79,7 +82,10 @@ export class Multiplayer {
     this.notice(`${event.name} ${messages[event.type]}`, 2200);
   }
   async grab(rock) {
-    if (!rock.effect || !this.online || this.conditions.spent.has(rock.id) || this.pending.has(rock.id)) return false;
+    if (!rock.effect) return false;
+    if (!this.online) { this.notice('OFFLINE · THE ROCK IS QUIET',1800); return false; }
+    if (this.conditions.spent.has(rock.id)) { this.notice('THIS STONE IS SPENT',1500); return false; }
+    if (this.pending.has(rock.id)) return false;
     this.pending.add(rock.id);
     const event = { epoch:this.player.epoch, id: `rock-${rock.id}`, rock: rock.id, type: rock.effect, author: this.uid,
       name: this.progress.name, requestedAt: this.transport.now(), startedAt: this.transport.now(), duration: DEFINITIONS[rock.effect].duration * 1000 };

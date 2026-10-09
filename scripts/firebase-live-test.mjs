@@ -5,6 +5,8 @@ import { firebaseConfig as config } from '../src/firebase-config.js';
 import { holds } from '../src/level.js';
 import { Climber } from '../src/climber.js';
 import { claimEncounter, encodePlayer } from '../src/multiplayer/protocol.js';
+import { Multiplayer } from '../src/multiplayer/session.js';
+import { Conditions } from '../src/conditions.js';
 import { DEFINITIONS } from '../src/conditions.js';
 const accounts=[]; let run, offset=0;
 async function auth(method, body) {
@@ -52,6 +54,28 @@ try {
   const snapshot=await request(accounts[2],'encounters');const data=await snapshot.json();
   assert.equal(Object.keys(data.rocks).length,2);assert.equal(Object.keys(data.events).length,2);
   for(const e of Object.values(data.events))assert.equal(typeof e.startedAt,'number');
+  // Feed actual server records through production eligibility and physics code.
+  const clients=accounts.map(a=>{
+    const player=new Climber(),conditions=new Conditions();
+    const game=new Multiplayer({transport:{now:()=>Date.now()+offset},player,conditions,
+      progress:{owns:id=>id===a.localId,name:a.name}});
+    game.uid=a.localId;game.online=true;game.syncRun(data);
+    return {game,player,conditions};
+  });
+  for(let i=0;i<accounts.length;i++){
+    const expected=Object.values(data.events).filter(e=>e.author!==accounts[i].localId).length;
+    assert.equal(clients[i].conditions.active.size,expected,'Real server event must activate only eligible receivers');
+  }
+  for(const type of Object.keys(DEFINITIONS)){
+    if(type==='WIND'||type==='LOW_GRAVITY')continue;
+    const rock=holds.find(h=>h.effect===type);assert(await claim(accounts[0],rock));
+    const fresh=await request(accounts[1],'encounters');const records=await fresh.json();
+    for(const client of clients)client.game.syncRun(records);
+    assert([...clients[1].conditions.active.values()].some(e=>e.type===type),`${type} reaches another player`);
+    assert(![...clients[0].conditions.active.values()].some(e=>e.type===type),`${type} author stays immune`);
+  }
+  for(const client of clients){client.conditions.update(.016,client.player);assert(Number.isFinite(client.conditions.modifiers.wind));}
+  console.log('LIVE RECEIVER PASS: all seven actual Firebase event types activate the production condition system; author immunity and overlapping recipients verified.');
   const leaving=await request(accounts[0],`players/${accounts[0].localId}`,{method:'DELETE'});assert(leaving.ok);
   const remaining=await request(accounts[1],'players');assert.equal(Object.keys(await remaining.json()).length,2);
   console.log('LIVE SERVICE PASS: three anonymous identities, player writes/reads, movement, one atomic race winner, shared events with server timestamps, and player removal. Browser presence still requires UI testing.');
