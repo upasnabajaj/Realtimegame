@@ -94,11 +94,11 @@ export class Conditions {
     const slow = strength('SLOW'), speed = strength('SPEED'), floating = strength('LOW_GRAVITY');
     const gust = matching('WIND')[0];
     this.modifiers = {
-      tempo: clamp((1 - slow * .4) * (1 + speed * .65), .6, 1.65),
-      gravity: 1 - floating * .76,
-      spring: clamp((1 - slow * .48) * (1 + speed * .6) * (1 - floating * .35), .34, 1.6),
-      damping: clamp((1 + slow * .16) * (1 - speed * .37) * (1 - floating * .4), .38, 1.16),
-      wind: gust ? gust.direction * gust.strength * (540 + 360 * Math.sin((gust.clock ? gust.age : this.time) * 2.6) ** 2) : 0,
+      tempo: clamp((1 - slow * .58) * (1 + speed * 1.1), .42, 2.1),
+      gravity: 1 - floating * .88,
+      spring: clamp((1 - slow * .48) * (1 + speed * .6) * (1 - floating * .55) * (1 - strength('WIND') * .55), .2, 1.6),
+      damping: clamp((1 + slow * .16) * (1 - speed * .52) * (1 - floating * .5), .24, 1.16),
+      wind: gust ? gust.direction * gust.strength * (700 + 280 * Math.sin((gust.clock ? gust.age : this.time) * 2.6) ** 2) : 0,
       float: floating,
       darkness: strength('DARKNESS'), ice: strength('ICE'), rockfall: strength('ROCKFALL'),
     };
@@ -106,8 +106,8 @@ export class Conditions {
     if (grip?.id !== this.gripId) { this.gripId = grip?.id ?? null; this.gripAge = 0; }
     if (grip && this.slippery(grip) && this.modifiers.ice > .15) {
       this.gripAge += dt * this.modifiers.ice;
-      player.slip = clamp(this.gripAge / 3.5, 0, 1);
-      if (this.gripAge >= 3.5) {
+      player.slip = clamp(this.gripAge / 2.25, 0, 1);
+      if (this.gripAge >= 2.25) {
         player.release();
         player.cooldown = .6;
         this.gripAge = 0;
@@ -146,10 +146,10 @@ export class Conditions {
       if (!stone.hit && cross && Math.abs(stone.x - player.x) < stone.radius + 11 && !player.grounded && this.hitCooldown === 0) {
         stone.hit = true;
         this.hitCooldown = 1.2;
-        player.vx = clamp(player.vx + (stone.x < player.x ? 100 : -100), -230, 230);
-        player.vy = Math.max(-300, player.vy - 65);
+        player.vx = clamp(player.vx + (stone.x < player.x ? 180 : -180), -230, 230);
+        player.vy = Math.max(-300, player.vy - 120);
         player.pending = null;
-        player.cooldown = Math.max(player.cooldown, .22);
+        player.cooldown = Math.max(player.cooldown, .4);
         player.catchPulse = .55;
       }
     }

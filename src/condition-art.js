@@ -77,7 +77,7 @@ export function drawAtmosphere(world, player, conditions) {
   c.save();
   if (Math.abs(m.wind) > 10) {
     c.strokeStyle = '#edf0d8'; c.lineWidth = .7;
-    c.globalAlpha = Math.abs(m.wind) / 900 * .2;
+    c.globalAlpha = Math.abs(m.wind) / 900 * .35;
     for (let i = 0; i < 23; i++) {
       const x = ((i * 137 + world.airOffset * (1 + i % 3)) % (w + 200) + w + 200) % (w + 200) - 100;
       const y = (i * 97 + Math.sin(world.time + i) * 5) % h;
@@ -87,7 +87,7 @@ export function drawAtmosphere(world, player, conditions) {
   c.globalAlpha = 1;
   if (m.darkness > .001) {
     const point = world.screen(player.x, player.y + 18);
-    const radius = 155 * world.scale;
+    const radius = 105 * world.scale;
     const glow = c.createRadialGradient(point.x, point.y, 28 * world.scale, point.x, point.y, radius * 1.7);
     glow.addColorStop(0, `rgba(16,24,38,${m.darkness * .06})`);
     glow.addColorStop(.46, `rgba(16,24,38,${m.darkness * .25})`);

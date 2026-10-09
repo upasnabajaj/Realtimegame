@@ -10,7 +10,7 @@ function step(player, conditions, seconds, input = idle, callback = () => {}) {
     player.update(1 / 120, input, h => conditions.grab(h), callback, m);
     assert(Number.isFinite(player.x) && Number.isFinite(player.y));
     if(m.wind||m.float||m.tempo!==1||m.rockfall)assert(Math.abs(player.vx) <= 280.01 && player.vy >= -850.01);
-    assert(m.gravity >= .24 && m.tempo >= .6 && m.tempo <= 1.65);
+    assert(m.gravity >= .119 && m.tempo >= .42 && m.tempo <= 2.1);
   }
 }
 function hanging() {
@@ -66,7 +66,7 @@ assert(once.grab(rock)); assert(!once.grab(rock)); step(new Climber(), once, 12)
 assert(once.trigger(rock.effect), 'Developer triggers can repeat without resetting spent rocks');
 once.trigger('DARKNESS'); once.clear(); step(new Climber(), once, 1.5); assert.equal(once.active.size, 0);
 assert(holds.filter(h => h.effect).length < holds.length * .1);
-assert(holds.filter(h => h.effect).every(h => h.y > 550));
+assert(holds.filter(h => h.effect).every(h => h.y > 300));
 for (const type of CONDITION_TYPES) assert(holds.some(h => h.effect === type));
 // All checkpoint recovery paths remain valid with every condition stacked.
 for (let cp = 1; cp <= 3; cp++) {

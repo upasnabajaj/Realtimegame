@@ -29,7 +29,7 @@ Twenty-one existing holds now carry an `effect` field. Their fine luminous seams
 - **SPEED** (6s): faster reaching and reduced damping create overshoot.
 - **LOW GRAVITY** (8s): lighter falls, floatier swings, and longer releases.
 - **DARKNESS** (7s): atmospheric darkness leaves a readable area around the climber.
-- **ICE** (9s): two-thirds of holds frost over; remaining on one for about 3.5 seconds causes a slip. Dry holds remain safe.
+- **ICE** (9s): two-thirds of holds frost over; remaining on one for about 2.25 seconds causes a slip. Dry holds remain safe.
 - **ROCKFALL** (7s): three warned volleys of stones; collisions shove and briefly interrupt reaching. Ledges are safe.
 
 Different effects overlap. Repeating one type refreshes its envelope rather than multiplying it. All modifiers are bounded and rebuilt from baseline every frame, with a 1.4-second fade-out. Sound is synthesized quietly after a player gesture; it is never required to play.

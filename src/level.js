@@ -56,3 +56,12 @@ for(let section=0;section<4;section++){
   }
  }
 }
+
+// Introduce the first disturbance after the opening handful of catches.
+// Swap positions only, preserving stable special-rock IDs and event rules.
+{ const wind=holds[25],intro=holds[13];
+  const {x,y}=wind;wind.x=intro.x;wind.y=intro.y;intro.x=x;intro.y=y;
+}
+{ const slow=holds[52],intro=holds[19];
+  const {x,y}=slow;slow.x=intro.x;slow.y=intro.y;intro.x=x;intro.y=y;
+}
