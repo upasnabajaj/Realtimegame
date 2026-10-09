@@ -41,7 +41,7 @@ Expiry follows Firebase-adjusted wall time, so backgrounding a tab does not exte
 
 ## Presence, refresh, and failures
 
-`onDisconnect().remove()` is acknowledged before presence is published. Refresh creates a new temporary UID; the old connection is removed. Minimal session/local progress restores a valid grip, otherwise the last checkpoint. A reload remembers recent self-authored UIDs so the player stays immune to their own still-active event. A newly opened tab receives a distinct identity and does not inherit this immunity.
+`onDisconnect().remove()` is acknowledged before presence is published. Refresh creates a new temporary UID; the old connection is removed. Reload starts the local climber at the base with no grips or checkpoints. Shared run state and other climbers are preserved. A reload remembers recent self-authored UIDs so the player stays immune to their own still-active event. A newly opened tab receives a distinct identity and does not inherit this immunity.
 
 Remote data is validated before rendering. Stale avatars fade from the shared view by a 45-second cutoff; after 90 seconds an online client can transactionally prune a stale database record. The rules prevent pruning a newly refreshed heartbeat. Every subscription is removed on teardown. Firebase outages never stop the frame loop.
 

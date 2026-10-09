@@ -56,7 +56,7 @@ Run `npm test` (or both `node tests/route.mjs` and `node tests/conditions.mjs`).
 
 Firebase integration is configured for the supplied project. See [MULTIPLAYER.md](MULTIPLAYER.md) for the required anonymous-provider/rules setup, data layout, deployment, and test commands. Normal special-rock catches now publish a shared event: its author is immune and every other connected player receives the condition. The opt-in developer shortcuts remain local test triggers.
 
-Local controls and physics do not wait for the network. Remote climbers use the same illustrated renderer, an understated scarf accent, and small temporary names. Progress survives refresh locally; shared players, spent rocks, and events come from Realtime Database.
+Local controls and physics do not wait for the network. Remote climbers use the same illustrated renderer, an understated scarf accent, and small temporary names. Reload restarts the local climber at the base; shared players, spent rocks, and events come from Realtime Database.
 
 ## Production build and ending
 

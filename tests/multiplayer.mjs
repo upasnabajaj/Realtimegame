@@ -112,14 +112,14 @@ for(const type of Object.keys(DEFINITIONS)) {
   assert.equal(one.conditions.active.size,0);assert.equal(two.conditions.active.size,1);
   tick(hub,[one,two],12);assert.deepEqual(two.conditions.modifiers,NORMAL);assert.equal(two.conditions.active.size,0);
 }
-// Refresh preserves a valid grip and immunity to a still-active event from the old identity.
+// Refresh restarts only this player, retaining immunity to its own active event.
 const refreshHub=new Hub(),old=client(refreshHub),observer=client(refreshHub);await old.game.start();await observer.game.start();
 old.player.x=winds[0].x;old.player.y=winds[0].y-43;old.player.grips=[winds[0],null];old.player.grounded=false;
 await old.game.grab(winds[0]);old.progress.save(old.player);const oldID=old.game.uid;
 await old.game.stop();assert(!observer.game.remotes.entries.has(oldID));
 const refreshed=client(refreshHub,old.session,old.local,true);await refreshed.game.start();
 assert.notEqual(refreshed.game.uid,oldID);assert.equal(refreshed.progress.name,old.progress.name);
-assert.equal(refreshed.player.grips[0].id,winds[0].id);assert.equal(refreshed.conditions.active.size,0);
+assert(refreshed.player.grips.every(g=>g===null));assert.equal(refreshed.player.checkpoint,0);assert.equal(refreshed.player.y,28);assert.equal(observer.conditions.active.size,1);assert.equal(refreshed.conditions.active.size,0);
 assert.equal(observer.game.remotes.entries.size,1,'Refresh does not leave a second avatar');
 const anotherTab=client(refreshHub,old.session,old.local,false);await anotherTab.game.start();
 assert(!anotherTab.progress.owns(oldID),'A newly opened tab does not inherit old author immunity');

@@ -1,4 +1,3 @@
-import { holds, ledges } from '../level.js';
 import { encodePlayer, validPlayer, safeName, randomId } from './protocol.js';
 
 const read = (storage, key) => { try { return JSON.parse(storage.getItem(key)); } catch { return null; } };
@@ -20,19 +19,9 @@ export class Progress {
   }
   owns(uid) { return this.previous.some(x => x.uid === uid); }
   restore(player) {
-    const saved = this.saved;
-    if (!validPlayer(saved)) return false;
-    player.checkpoint = saved.checkpoint;player.epoch=saved.epoch||0;
-    const grips = [holds[saved.left] || null, holds[saved.right] || null];
-    const grip = grips.find(Boolean);
-    if (saved.checkpoint!==4 && grip && Math.hypot(grip.x - saved.x, grip.y - saved.y) < 120) {
-      player.x = saved.x; player.y = saved.y; player.grips = grips; player.grounded = false;
-    } else {
-      const ledge = ledges[player.checkpoint];
-      player.x = ledge.x; player.y = ledge.y + 27; player.grounded = true;
-    }
-    player.next = saved.next; player.count = saved.checkpoint ? 3 : (grip ? 3 : 0);
-    player.finished = saved.checkpoint === 4; player.vx = player.vy = 0;
+    // A page load restarts this climber only; shared rocks and other players persist.
+    const epoch = validPlayer(this.saved) ? (this.saved.epoch || 0) : 0;
+    player.reset(epoch);
     return true;
   }
   save(player) {
