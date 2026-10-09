@@ -1,6 +1,13 @@
 import { holds } from '../level.js';
 import { DEFINITIONS, NORMAL } from '../conditions.js';
 
+// Derive appearance from the shared name, so refresh and every observer agree.
+export function playerColours(name) {
+  let hash=0;for(const ch of name)hash=(Math.imul(hash,31)+ch.charCodeAt(0))>>>0;
+  const jackets=['#c06446','#427f91','#719253','#9a6692','#b28b3e','#5973a4','#418a7b','#a85764'];
+  return {jacket:jackets[hash%jackets.length],accent:['#ecd19d','#d2e0d9','#e4c5b5'][Math.floor(hash/8)%3]};
+}
+
 export function randomId() {
   if(globalThis.crypto?.randomUUID)return globalThis.crypto.randomUUID();
   if(globalThis.crypto?.getRandomValues)return Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)),n=>n.toString(16).padStart(2,'0')).join('');
@@ -76,7 +83,7 @@ export class RemotePlayers {
       pose.target = discrete.reaching ? { x: discrete.tx, y: discrete.ty } : null;
       pose.modifiers = { ...NORMAL, wind: pose.wind };
       pose.pending = null; pose.catchPulse = 0;
-      pose.accent = ['#98afa2', '#baaa80', '#9cabb9', '#b5958b'][id.charCodeAt(0) % 4];
+      Object.assign(pose, playerColours(pose.name));
       result.push(pose);
     }
     return result;

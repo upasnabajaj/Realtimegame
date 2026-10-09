@@ -1,3 +1,4 @@
+import { playerColours } from './multiplayer/protocol.js';
 import { Summit } from './summit.js';
 import { Climber } from './climber.js';
 import { World } from './world.js';
@@ -16,6 +17,7 @@ const pointers = new Set();
 const storage = kind => { try { return window[kind]; } catch { return null; } };
 const progress = new Progress(sharedRun, storage('sessionStorage'), storage('localStorage'), performance.getEntriesByType('navigation')[0]?.type === 'reload');
 progress.restore(player);
+Object.assign(player, playerColours(progress.name));
 world.camera = Math.max(0, player.y - 55);
 const connection = document.createElement('div');
 connection.id = 'connection'; connection.setAttribute('aria-live', 'polite'); document.body.append(connection);
