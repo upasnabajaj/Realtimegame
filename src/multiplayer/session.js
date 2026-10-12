@@ -1,11 +1,11 @@
 import { DEFINITIONS } from '../conditions.js';
 import { holds } from '../level.js';
 import { epochOf, canReplay } from './run.js';
-import { playerColours, encodePlayer, validPlayer, validEvent, RemotePlayers, STALE_MS } from './protocol.js';
+import { nextEventAt, playerColours, encodePlayer, validPlayer, validEvent, RemotePlayers, STALE_MS } from './protocol.js';
 
 const messages = {
   WIND: 'DISTURBED THE WIND', SLOW: 'WOKE THE WEIGHT', SPEED: 'QUICKENED THE MOUNTAIN',
-  LOW_GRAVITY: 'BROKE GRAVITY', DARKNESS: 'DREW THE DARK', ICE: 'WOKE THE FROST', ROCKFALL: 'LOOSENED THE STONE',
+  LOW_GRAVITY: 'BROKE GRAVITY', DOWNWARD_PULL: 'WOKE THE DOWNWARD PULL', ICE: 'WOKE THE FROST', ROCKFALL: 'LOOSENED THE STONE',
 };
 export class Multiplayer {
   constructor({ transport, player, conditions, progress, notice = () => {}, status = () => {}, feedback = () => {}, winner = () => {}, arrival = () => {}, reset = () => {} }) {
@@ -70,11 +70,6 @@ export class Multiplayer {
     if (now - event.startedAt >= event.duration) return;
     const rock = holds[event.rock];
     this.conditions.flashes.set(rock.id, 1); this.feedback(rock);
-    // Immunity belongs to the immutable author of THIS event, not to an effect type.
-    if (event.author === this.uid || this.progress.owns(event.author)) {
-      if(event.author===this.uid)this.notice(`${event.type.replaceAll('_',' ')} · SENT TO OTHER CLIMBERS`,2400);
-      return;
-    }
     this.conditions.trigger(event.type, null, {
       id: event.id, startedAt: event.startedAt, clock: () => this.transport.now(),
       direction: event.rock % 2 ? 1 : -1,
@@ -85,6 +80,8 @@ export class Multiplayer {
     if (!rock.effect) return false;
     if (!this.online) { this.notice('OFFLINE · THE ROCK IS QUIET',1800); return false; }
     if (this.conditions.spent.has(rock.id)) { this.notice('THIS STONE IS SPENT',1500); return false; }
+    const remaining = nextEventAt(this.runState) - this.transport.now();
+    if (remaining > 0) { this.notice(`THE MOUNTAIN RESTS · ${Math.ceil(remaining/1000)}s`,1800); return false; }
     if (this.pending.has(rock.id)) return false;
     this.pending.add(rock.id);
     const event = { epoch:this.player.epoch, id: `rock-${rock.id}`, rock: rock.id, type: rock.effect, author: this.uid,
@@ -92,6 +89,14 @@ export class Multiplayer {
     try { return await this.transport.claim(event); }
     catch (error) { this.error = error.code || error.message; return false; }
     finally { this.pending.delete(rock.id); }
+  }
+  countdown() {
+    const now=this.transport.now();
+    const active=Object.values(this.runState.events||{}).find(e=>e.startedAt<=now&&e.startedAt+e.duration>now);
+    const label=type=>type==='ICE'?'FROZEN':type==='ROCKFALL'?'FALLING ROCKS':type.replaceAll('_',' ');
+    if(active)return `${label(active.type)} · ${Math.ceil((active.startedAt+active.duration-now)/1000)}s`;
+    const rest=nextEventAt(this.runState)-now;
+    return rest>0?`NEXT EVENT IN ${Math.ceil(rest/1000)}s`:'';
   }
   update(now) {
     if (this.disposed) return [];

@@ -5,7 +5,7 @@ import { Summit } from './summit.js';
 import { Climber } from './climber.js';
 import { World } from './world.js';
 import { HEIGHT, ledges, nearHolds } from './level.js';
-import { Conditions, CONDITION_TYPES } from './conditions.js';
+import { Conditions, CONDITION_TYPES, conditionLabel } from './conditions.js';
 import { Sound } from './sound.js';
 import { firebaseConfig, sharedRun } from './firebase-config.js';
 import { Progress } from './multiplayer/progress.js';
@@ -25,13 +25,13 @@ const connection = document.createElement('div');
 connection.id = 'connection'; connection.setAttribute('aria-live', 'polite'); document.body.append(connection);
 let multiplayer, signedInUser = null, lifecycle = Promise.resolve(), leaving = false;
 const ui = Object.fromEntries(['notice', 'hint', 'meters', 'marker', 'region'].map(id => [id, document.getElementById(id)]));
-let last = performance.now(), noticeTimer;
+let last = performance.now(), noticeTimer, noticeUntil = 0, noticeText = '';
 const conditions = new Conditions((type, rock, count) => {
   if (rock) {
     world.catch(rock, true);
     for (let i = 0; i < 7; i++) world.particles.push({ x: rock.x, y: rock.y, vx: (i - 3) * 12, vy: 25 + i * 4, life: 1.3, size: 1.5 });
   }
-  showNotice(type.replaceAll('_', ' ') + (count > 1 ? ` · ${count} CONDITIONS ACTIVE` : ''), 1900);
+  showNotice(conditionLabel(type) + (count > 1 ? ` · ${count} CONDITIONS ACTIVE` : ''), 1900);
   audio.condition(type);
 });
 
@@ -59,6 +59,7 @@ window.addEventListener('keydown', event => {
 });
 
 function showNotice(text, duration) {
+  noticeText = text; noticeUntil = performance.now() + duration;
   ui.notice.textContent = text; ui.notice.style.opacity = 1;
   clearTimeout(noticeTimer);
   noticeTimer = setTimeout(() => { ui.notice.style.opacity = 0; }, duration);
@@ -139,7 +140,7 @@ const params = new URLSearchParams(location.search);
 const devMode = ['localhost','127.0.0.1','[::1]'].includes(location.hostname) && params.get('dev') === '1';
 if (devMode) {
   const trigger = type => conditions.trigger(type.toUpperCase().replaceAll(' ', '_'));
-  const combos = [['WIND', 'LOW_GRAVITY'], ['WIND', 'SPEED'], ['DARKNESS', 'WIND'], ['ICE', 'SLOW'], ['ROCKFALL', 'LOW_GRAVITY']];
+  const combos = [['WIND', 'LOW_GRAVITY'], ['WIND', 'SPEED'], ['DOWNWARD_PULL', 'WIND'], ['ICE', 'SLOW'], ['ROCKFALL', 'LOW_GRAVITY']];
   let combo = 0;
   window.__stillward = {
     player, world, conditions, trigger,
@@ -170,6 +171,12 @@ function frame(now) {
   const modifiers = conditions.update(dt, player);
   if(signedInUser && !leaving)player.update(dt, input, caught, checkpointNotice, modifiers);
   const remotes = multiplayer?.update(now) || [];
+  if (signedInUser) {
+    const countdown = multiplayer?.countdown() || '';
+    const message = now < noticeUntil ? noticeText : '';
+    const text = [message, countdown].filter(Boolean).join(' · ');
+    ui.notice.textContent = text; ui.notice.style.opacity = text ? 1 : 0;
+  }
   summit.update(dt, player);
   replay.hidden = !(signedInUser && player.finished && summit.arrival > 9 && (!multiplayer?.online || multiplayer.replayAvailable()));
   world.draw(player, input, dt, conditions, remotes);

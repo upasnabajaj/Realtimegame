@@ -18,7 +18,7 @@ export class Climber {
   }
   reachToward(target) {
     if (this.finished || this.mantle || this.pending || this.cooldown > 0) return;
-    const rock = nearHolds(target.x, target.y, 35).sort((a,b) =>
+    const rock = nearHolds(target.x, target.y, 35).filter(h => !this.grips.includes(h) && Math.hypot(h.x-this.x,h.y-this.y-13)<=this.reach).sort((a,b) =>
       Math.hypot(a.x-target.x,a.y-target.y)-Math.hypot(b.x-target.x,b.y-target.y))[0];
     if (rock && !this.grips.includes(rock) && Math.hypot(rock.x-this.x,rock.y-this.y-13)<=this.reach)
       this.pending = { hold: rock, time: 0, hand: this.next };
@@ -55,8 +55,9 @@ export class Climber {
     if(grip){this.vx+=(grip.x-this.x)*32*m.spring*dt;this.vy+=(grip.y-43-this.y)*36*m.spring*dt;
       this.vx*=Math.exp(-6*m.damping*dt);this.vy*=Math.exp(-7*m.damping*dt);
     }else if(!this.grounded){this.vy-=640*m.gravity*dt;this.vx*=Math.exp(-.3*(1-m.float*.65)*dt);}
-    if(!this.grounded){this.vx+=m.wind*dt;if(m.wind||m.float||m.tempo!==1||m.rockfall){this.vx=Math.max(-280,Math.min(280,this.vx));this.vy=Math.max(-850,Math.min(380,this.vy));}}
-    this.x+=this.vx*dt;this.y+=this.vy*dt;
+    if (!this.grounded) this.vy -= (m.pull || 0) * 380 * dt;
+    if(!this.grounded){this.vx+=m.wind*dt;if(m.wind||m.float||m.tempo!==1||m.rockfall||m.pull){this.vx=Math.max(-280,Math.min(280,this.vx));this.vy=Math.max(-850,Math.min(380,this.vy));}}
+    this.x+=this.vx*dt;this.y+=this.vy*dt*(this.vy>0?(m.upward ?? 1):1);
     if(grip){const dx=this.x-grip.x,dy=this.y-grip.y,d=Math.hypot(dx,dy);if(d>88){this.x=grip.x+dx/d*88;this.y=grip.y+dy/d*88;}}
     if(!grip&&this.vy<=0)for(const ledge of ledges){
       if(previousY>=ledge.y+25&&this.y<=ledge.y+25&&Math.abs(this.x-ledge.x)<ledge.width*.6){

@@ -27,8 +27,8 @@ for(let section=1;section<=4;section++)for(let lane=-2;lane<=2;lane++)holds.push
 const strangeRoutes = [
   [[8, 'WIND'], [17, 'SLOW']],
   [[3, 'SPEED'], [8, 'WIND'], [13, 'LOW_GRAVITY'], [19, 'ROCKFALL']],
-  [[2, 'ICE'], [6, 'DARKNESS'], [9, 'SLOW'], [12, 'ICE'], [16, 'ROCKFALL'], [20, 'LOW_GRAVITY']],
-  [[2, 'WIND'], [4, 'LOW_GRAVITY'], [7, 'SPEED'], [9, 'DARKNESS'], [12, 'ICE'], [14, 'SLOW'], [17, 'ROCKFALL'], [19, 'LOW_GRAVITY'], [21, 'WIND']],
+  [[2, 'ICE'], [6, 'DOWNWARD_PULL'], [9, 'SLOW'], [12, 'ICE'], [16, 'ROCKFALL'], [20, 'LOW_GRAVITY']],
+  [[2, 'WIND'], [4, 'LOW_GRAVITY'], [7, 'SPEED'], [9, 'DOWNWARD_PULL'], [12, 'ICE'], [14, 'SLOW'], [17, 'ROCKFALL'], [19, 'LOW_GRAVITY'], [21, 'WIND']],
 ];
 strangeRoutes.forEach((entries, section) => entries.forEach(([row, effect]) => {
   const rock = holds[section * 72 + row * 3 + 1];

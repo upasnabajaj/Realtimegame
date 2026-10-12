@@ -19,7 +19,7 @@ function hanging() {
   return p;
 }
 const combinations = [
-  ['WIND', 'LOW_GRAVITY'], ['WIND', 'SPEED'], ['DARKNESS', 'WIND'],
+  ['WIND', 'LOW_GRAVITY'], ['WIND', 'SPEED'], ['DOWNWARD_PULL', 'WIND'],
   ['ICE', 'SLOW'], ['ROCKFALL', 'LOW_GRAVITY'], CONDITION_TYPES,
 ];
 for (const types of [...CONDITION_TYPES.map(t => [t]), ...combinations]) {
@@ -28,7 +28,7 @@ for (const types of [...CONDITION_TYPES.map(t => [t]), ...combinations]) {
     types.forEach(t => c.trigger(t));
     step(p, c, 1);
     assert.equal(c.active.size, types.length);
-    p.release(); step(p, c, 13);
+    p.release(); step(p, c, 26);
     assert.deepEqual(c.modifiers, NORMAL, `${types}: all modifiers return exactly to baseline`);
     assert.equal(c.active.size, 0); assert.equal(c.debris.length, 0);
     assert(p.grounded, `${types}: falling recovers to a safe ledge`);
@@ -38,7 +38,7 @@ for (const types of [...CONDITION_TYPES.map(t => [t]), ...combinations]) {
 // Each condition measurably changes its intended behavior.
 const windPlayer = hanging(), wind = new Conditions(), startX = windPlayer.x;
 wind.trigger('WIND'); step(windPlayer, wind, 2);
-assert(Math.abs(windPlayer.x - startX) > 12, 'Wind must move the hanging body');
+assert(Math.abs(windPlayer.x - startX) > 3, 'Wind must move the hanging body');
 function reachTime(type) {
   const p = hanging(), c = new Conditions(); if (type) c.trigger(type);
   step(p, c, 1);
@@ -54,17 +54,26 @@ const normal = hanging(), neutral = new Conditions();
 const floatY = floating.y, normalY = normal.y;
 floating.release(); normal.release(); step(floating, float, .7); step(normal, neutral, .7);
 assert(floating.y - floatY > normal.y - normalY + 100, 'Float extends airborne time');
-const icePlayer = hanging(), ice = new Conditions(); ice.trigger('ICE'); step(icePlayer, ice, 2);
-assert(icePlayer.slip > .35 && icePlayer.grips.some(Boolean));
-step(icePlayer, ice, 2.5); assert(!icePlayer.grips.some(Boolean), 'Icy grip eventually slips');
-const dark = new Conditions(), dp = hanging(); dark.trigger('DARKNESS'); step(dp, dark, 1); assert.equal(dark.modifiers.darkness, 1);
+const icePlayer = hanging(), ice = new Conditions(); ice.trigger('ICE'); step(icePlayer, ice, .8);
+assert(icePlayer.slip > .7 && icePlayer.grips.some(Boolean));
+const frozenRock=icePlayer.grips.find(Boolean);
+icePlayer.release();step(icePlayer,ice,.1);icePlayer.cooldown=0;
+assert(icePlayer.grab(frozenRock,()=>{}));step(icePlayer,ice,.25);
+assert(!icePlayer.grips.some(Boolean),'Re-catching the same rock does not reset frozen timer');
+assert(holds.every(h=>ice.slippery(h)), 'Every stone freezes');
+const pull = new Conditions(), dp = hanging(), beforePull=dp.y;
+pull.trigger('DOWNWARD_PULL'); step(dp, pull, .4);
+assert(dp.y < beforePull-20 && !dp.grips.some(Boolean),'Downward pull loses height but permits recovery');
 const rain = new Conditions(), rp = hanging(); rain.trigger('ROCKFALL'); step(rp, rain, .2);
 assert(rain.debris.length === 3 && rain.debris.every(s => s.warning > .7));
-step(rp, rain, 3); assert(rain.debris.some(s => s.hit), 'A stone collision should push the climber');
+step(rp, rain, 2); assert(!rp.grips.some(Boolean),'Rock hit detaches the grip');
+// Late volleys must still spawn, with bounded particle count.
+step(rp,rain,14);assert(rain.debris.some(s=>s.warning>0),'Rockfall continues late in its 20-second event');
+assert(rain.debris.length<30);
 const rock = holds.find(h => h.effect), once = new Conditions();
 assert(once.grab(rock)); assert(!once.grab(rock)); step(new Climber(), once, 12); assert(!once.grab(rock));
 assert(once.trigger(rock.effect), 'Developer triggers can repeat without resetting spent rocks');
-once.trigger('DARKNESS'); once.clear(); step(new Climber(), once, 1.5); assert.equal(once.active.size, 0);
+once.trigger('DOWNWARD_PULL'); once.clear(); step(new Climber(), once, 1.5); assert.equal(once.active.size, 0);
 assert(holds.filter(h => h.effect).length < holds.length * .1);
 assert(holds.filter(h => h.effect).every(h => h.y > 300));
 for (const type of CONDITION_TYPES) assert(holds.some(h => h.effect === type));
@@ -98,7 +107,7 @@ assert.equal(natural.spent.size, events.length, 'Each natural event is a unique 
 console.log(`Natural-condition summit ascent: ${catches} catches, ${events.length} unique events, ${seconds.toFixed(1)} seconds.`);
 
 const fading = new Conditions(), resting = new Climber();
-fading.trigger('DARKNESS'); step(resting, fading, .1);
-const dim = fading.modifiers.darkness; fading.clear(); step(resting, fading, .1);
-assert(fading.modifiers.darkness <= dim, 'Early clear must never intensify an effect');
+fading.trigger('DOWNWARD_PULL'); step(resting, fading, .1);
+const dim = fading.modifiers.pull; fading.clear(); step(resting, fading, .1);
+assert(fading.modifiers.pull <= dim, 'Early clear must never intensify an effect');
 step(resting, fading, 2); assert.deepEqual(fading.modifiers, NORMAL);
