@@ -34,8 +34,14 @@ export class GoogleAuth {
         this.user = isGoogleUser(user) ? user : null;
         this.changed(this.user);
         this.state(this.user ? 'signed-in' : 'signed-out', '');
-      }, error => this.state('error', authMessage(error)));
-    } catch (error) { this.state('error', authMessage(error)); }
+      }, error => {
+        this.user = null; this.changed(null);
+        this.state('error', authMessage(error));
+      });
+    } catch (error) {
+      this.auth = null; // The next click reloads initialization rather than using an incomplete listener.
+      this.state('error', authMessage(error));
+    }
   }
   async signIn() {
     if (this.busy || !this.auth) return;

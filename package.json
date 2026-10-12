@@ -9,6 +9,7 @@
     "firebase:check": "node scripts/firebase-check.mjs",
     "firebase:rules": "node scripts/database-rules-v2.mjs",
     "build": "node scripts/build.mjs",
-    "firebase:test:v1": "node scripts/firebase-live-test.mjs"
+    "firebase:test:v1": "node scripts/firebase-live-test.mjs",
+    "test:rules": "node tests/rules-v2.mjs"
   }
 }

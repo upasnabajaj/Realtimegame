@@ -1,10 +1,10 @@
-# Stillward
+# Stillward — Version 2
 
 A self-contained illustrated climbing game. Original procedural art and generated audio; Firebase is the only network service.
 
 ## Play locally
 
-Run `python3 -m http.server 5173`, then open http://localhost:5173.
+Run `python3 -m http.server 5173`, then open http://localhost:5173. Sign in with Google to join. See [VERSION_2.md](VERSION_2.md) for rules, release steps and verification limits.
 
 Hold or drag toward a nearby rock. Hands alternate and the previous grip releases after the next catch. Let go of the pointer to rest. Overstretching for too long loses your grip. Space (or two simultaneous touches) releases both hands. Reach for a lower hold during a fall to recover. Terraces save progress at quarter-height intervals.
 
@@ -54,7 +54,7 @@ Run `npm test` (or both `node tests/route.mjs` and `node tests/conditions.mjs`).
 
 ## Realtime multiplayer
 
-Firebase integration is configured for the supplied project. See [MULTIPLAYER.md](MULTIPLAYER.md) for the required anonymous-provider/rules setup, data layout, deployment, and test commands. Normal special-rock catches now publish a shared event: its author is immune and every other connected player receives the condition. The opt-in developer shortcuts remain local test triggers.
+Google authentication gates multiplayer access. Review [VERSION_2.md](VERSION_2.md) and the exact proposed `database.v2.rules.json` before publishing. Special-rock catches publish one shared event: its author is immune and other connected players receive the condition. Developer shortcuts remain local-only test triggers.
 
 Local controls and physics do not wait for the network. Remote climbers use the same illustrated renderer, an understated scarf accent, and small temporary names. Reload restarts the local climber at the base; shared players, spent rocks, and events come from Realtime Database.
 
@@ -64,4 +64,4 @@ Local controls and physics do not wait for the network. Remote climbers use the 
 
 The final hold leads to a brief physical mantle onto the summit, a landscape reveal, one quiet tremor and the first climber’s name. Later arrivals receive a short acknowledgment. Shared replay waits for active climbers to finish; a new epoch resets used rocks, effects and local climbing state. Offline replay remains local.
 
-Release limitation: Firebase Authentication still returns `CONFIGURATION_NOT_FOUND`; live multiplayer acceptance and rules deployment remain outstanding. Automated three-client tests are deterministic protocol tests, not evidence of a live Firebase session.
+Release limitation: real two-account Google OAuth and live V2 multiplayer acceptance remain outstanding. Automated three-client and local-emulator tests are not evidence of live multi-account acceptance. See VERSION_2.md.

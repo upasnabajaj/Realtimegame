@@ -1,3 +1,9 @@
+# Version 2 multiplayer
+
+The current setup, exact proposed Google-only security rules, data ownership, testing limits and publishing steps are documented in [VERSION_2.md](VERSION_2.md). The anonymous-authentication instructions below are archived Version 1 notes and must not be used to configure Version 2.
+
+---
+
 # Shared mountain
 
 The existing game stays static-hosted, including GitHub Pages. Firebase's modular CDN SDK loads independently of the frame loop. There is no application server, lobby, login form, or framework change.
