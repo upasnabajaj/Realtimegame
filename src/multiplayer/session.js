@@ -96,7 +96,7 @@ export class Multiplayer {
   update(now) {
     if (this.disposed) return [];
     if (now - this.lastSave > 1000) { this.progress.save(this.player); this.lastSave = now; }
-    if(this.online&&this.player.finished&&!this.runState.finishers?.[this.uid]&&!this.finishBusy&&now>=this.nextFinish&&this.transport.finish){
+    if(this.online&&this.player.finished&&(!this.runState.finishers?.[this.uid]||!this.runState.winner)&&!this.finishBusy&&now>=this.nextFinish&&this.transport.finish){
       this.finishBusy=true;this.nextFinish=now+2500;
       this.transport.finish({author:this.uid,name:this.progress.name,epoch:this.player.epoch,at:this.transport.now()})
         .catch(error=>{this.error=error.code||error.message;}).finally(()=>{this.finishBusy=false;});
