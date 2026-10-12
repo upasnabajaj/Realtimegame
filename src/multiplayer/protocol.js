@@ -13,11 +13,11 @@ export function randomId() {
   if(globalThis.crypto?.getRandomValues)return Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)),n=>n.toString(16).padStart(2,'0')).join('');
   return Date.now().toString(16)+Math.random().toString(16).slice(2);
 }
-export const VERSION = 1;
+export const VERSION = 2;
 export const STALE_MS = 45000;
 const finite = (n, lo, hi) => Number.isFinite(n) && n >= lo && n <= hi;
 const rounded = n => Math.round(n * 10) / 10;
-export const safeName = name => typeof name === 'string' && /^CLIMBER [A-Z0-9]{4}$/.test(name);
+export const safeName = name => typeof name === 'string' && name.length > 0 && name.length <= 40 && !/[\u0000-\u001f\u007f<>]/.test(name);
 export function encodePlayer(p, name) {
   return {
     v: VERSION, epoch:p.epoch||0, name, x: rounded(p.x), y: rounded(p.y), vx: rounded(p.vx), vy: rounded(p.vy),
@@ -73,7 +73,7 @@ export class RemotePlayers {
       const distance = Math.hypot(a.x - b.x, a.y - b.y);
       const t = distance > 450 ? 1 : Math.max(0, Math.min(1, (at - a.at) / Math.max(1, b.at - a.at)));
       const discrete = t < .5 ? a : b;
-      const pose = { ...discrete };
+      const pose = { ...discrete, id };
       for (const field of ['x', 'y', 'vx', 'vy', 'angle', 'slip', 'wind']) pose[field] = a[field] + (b[field] - a[field]) * t;
       if (at > b.at && !b.grounded) {
         const extra = Math.min(.12, (at - b.at) / 1000);
