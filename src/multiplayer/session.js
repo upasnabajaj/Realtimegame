@@ -122,7 +122,7 @@ export class Multiplayer {
     const slot=Math.max(0,roster.indexOf(this.uid));
     Object.assign(this.player,playerColours(this.progress.name,slot));
     for(const remote of remotes){
-      const id=roster.find(id=>this.playerStates.get(id)?.name===remote.name);
+      const id=remote.id;
       Object.assign(remote,playerColours(remote.name,Math.max(0,roster.indexOf(id))));
     }
     // Only settle an untouched climber on the safe base, never move someone climbing.

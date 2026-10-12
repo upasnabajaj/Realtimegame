@@ -9,4 +9,4 @@ export const firebaseConfig = {
   appId: '1:221027376818:web:2dbcc539ad6fce849ab3ab',
 };
 // A versioned shared mountain. Change deliberately to begin a fresh shared run.
-export const sharedRun = 'mountain-v1';
+export const sharedRun = 'mountain-v2';
