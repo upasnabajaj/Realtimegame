@@ -72,11 +72,14 @@ export class FirebaseTransport {
       return {id:event.id, author:this.uid, epoch:event.epoch, startedAt:this.sdk.serverTimestamp(), duration:event.duration};
     }, {applyLocally:false});
     if (!reservation.committed) return false;
-    const slot = reservation.snapshot.val();
+    // Transaction snapshots can contain the client's estimated server timestamp.
+    // Fetch the acknowledged value before rules compare the event to its reservation.
+    const slot = (await this.sdk.get(slotRef)).val();
+    if (!slot || slot.author !== this.uid || slot.id !== event.id || slot.epoch !== event.epoch) return false;
     try {
       const path = this.sdk.ref(this.db, `${this.base}/encounters/events/${event.id}`);
       const result = await this.sdk.runTransaction(path,
-        current => this.connected && !this.disposed && !current ? { ...event, startedAt:slot.startedAt } : undefined,
+        current => this.connected && !this.disposed && !current ? { ...event, requestedAt:this.now(), startedAt:slot.startedAt } : undefined,
         { applyLocally: false });
       if (result.committed) return true;
     } catch (error) { this.callbacks.error(error); }
