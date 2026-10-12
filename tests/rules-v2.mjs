@@ -43,6 +43,16 @@ await allowed(eventPath,'PUT',event,alice);
 const nextRock=holds.find(h=>h.effect==='ICE');
 await denied(`${path}/encounters/slot`,'PUT',{id:`rock-${nextRock.id}`,author:'bob_tab',epoch:0,startedAt:{'.sv':'timestamp'},duration:12000},bob);
 await denied(`${path}/encounters/slot`,'DELETE',undefined,alice); // An active event cannot be cancelled.
+// The quiet gap is enforced by the database, even after the effect itself has ended.
+await allowed(`${path}/encounters/slot/startedAt`,'PUT',Date.now()-16000,'owner');
+const nextSlot={id:`rock-${nextRock.id}`,author:'bob_tab',epoch:0,startedAt:{'.sv':'timestamp'},duration:12000};
+await denied(`${path}/encounters/slot`,'PUT',nextSlot,bob);
+await allowed(`${path}/encounters/slot/startedAt`,'PUT',Date.now()-28000,'owner');
+await allowed(`${path}/encounters/slot`,'PUT',nextSlot,bob);
+await denied(`${path}/encounters/slot`,'PUT',{...nextSlot,author:'alice_tab'},alice);
+// A failed reservation can be cancelled only before an event exists.
+await allowed(`${path}/encounters/slot`,'DELETE',undefined,bob);
+
 
 await denied(eventPath,'PUT',{...event,type:'SPEED'},alice);
 await denied(eventPath,'DELETE',undefined,alice);

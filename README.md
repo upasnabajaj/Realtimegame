@@ -24,15 +24,15 @@ The game works with Pointer Events and disables browser scrolling and selection 
 
 Twenty-one existing holds now carry an `effect` field. Their fine luminous seams turn dark after their first successful grab; activation stays spent for the current run, including checkpoint recoveries. The first appears above the teaching section. Ordinary neighboring routes are unchanged.
 
-- **WIND** (8s): directional gusts push the body, rope, grit, and clouds.
+- **WIND** (15s): upward movement is reduced by up to 35%, with lateral resistance and drifting grit.
 - **SLOW** (6s): slower reaching and heavier spring recovery.
 - **SPEED** (6s): faster reaching and reduced damping create overshoot.
 - **LOW GRAVITY** (8s): lighter falls, floatier swings, and longer releases.
-- **DARKNESS** (7s): atmospheric darkness leaves a readable area around the climber.
-- **ICE** (9s): two-thirds of holds frost over; remaining on one for about 2.25 seconds causes a slip. Dry holds remain safe.
-- **ROCKFALL** (7s): three warned volleys of stones; collisions shove and briefly interrupt reaching. Ledges are safe.
+- **DOWNWARD PULL** (8s): support gives way, followed by a recoverable downward force. No spotlight or visibility mask.
+- **FROZEN** (12s): all holds frost over. One second gripping a stone causes a slip; only catching a different stone resets the timer.
+- **FALLING ROCKS** (20s): three warned stones spawn every 0.8 seconds across changing positions. Hits detach the grip and cause a recoverable fall. Ledges remain safe.
 
-Different effects overlap. Repeating one type refreshes its envelope rather than multiplying it. All modifiers are bounded and rebuilt from baseline every frame, with a 1.4-second fade-out. Sound is synthesized quietly after a player gesture; it is never required to play.
+Shared events affect every player, including the activator, and have a server-enforced 12-second rest between events. Developer tests can still stack effects to check bounded physics. All modifiers are bounded and rebuilt from baseline every frame, with a 1.4-second fade-out. Sound is synthesized quietly after a player gesture; it is never required to play.
 
 `src/conditions.js` owns activation, durations, composition, slippery grips, and debris. `src/condition-art.js` draws seams, frost, debris, and atmospheric effects. `src/sound.js` provides optional gesture-gated audio.
 
@@ -42,7 +42,7 @@ Open `http://localhost:5173/?dev=1`. The presentation is identical to the ordina
 
 | Shortcut | Action |
 | --- | --- |
-| Alt+1…7 | WIND, SLOW, SPEED, LOW GRAVITY, DARKNESS, ICE, ROCKFALL |
+| Alt+1…7 | WIND, SLOW, SPEED, LOW GRAVITY, DOWNWARD_PULL, ICE, ROCKFALL |
 | Alt+0 | Smoothly fade all conditions out |
 | Alt+8 | Cycle the five requested test combinations |
 | Alt+9 | Move to the next checkpoint for route inspection |
@@ -54,7 +54,7 @@ Run `npm test` (or both `node tests/route.mjs` and `node tests/conditions.mjs`).
 
 ## Realtime multiplayer
 
-Google authentication gates multiplayer access. Review [VERSION_2.md](VERSION_2.md) and the exact proposed `database.v2.rules.json` before publishing. Special-rock catches publish one shared event: its author is immune and other connected players receive the condition. Developer shortcuts remain local-only test triggers.
+Google authentication gates multiplayer access. Review [VERSION_2.md](VERSION_2.md) and the exact proposed `database.v2.rules.json` before publishing. Special-rock catches publish one shared event: every connected player, including its author, receives the condition. Developer shortcuts remain local-only test triggers.
 
 Local controls and physics do not wait for the network. Remote climbers use the same illustrated renderer, an understated scarf accent, and small temporary names. Reload restarts the local climber at the base; shared players, spent rocks, and events come from Realtime Database.
 

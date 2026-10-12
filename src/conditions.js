@@ -134,7 +134,7 @@ export class Conditions {
       this.debris.push({
         x: player.x + i * 76 + (i ? (rand(wave * 13 + i) - .5) * 40 : 0), y: player.y + 220 + Math.abs(i) * 35,
         vx: (rand(wave * 7 + i + this.serial) - .5) * 16, vy: 0,
-        warning: 1.05 + Math.abs(i) * .12, life: 5.5,
+        warning: 1.05 + Math.abs(i) * .12, life: Math.min(5.5, (effect.duration ?? 5.5) - (effect.age ?? 0)),
         clock: effect.clock, expiresAt: effect.startedAt + effect.duration * 1000,
         radius: 5 + rand(wave * 19 + i) * 3, spin: rand(i + wave) * 6,
       });

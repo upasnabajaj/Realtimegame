@@ -86,8 +86,12 @@ export class Multiplayer {
     this.pending.add(rock.id);
     const event = { epoch:this.player.epoch, id: `rock-${rock.id}`, rock: rock.id, type: rock.effect, author: this.uid,
       name: this.progress.name, requestedAt: this.transport.now(), startedAt: this.transport.now(), duration: DEFINITIONS[rock.effect].duration * 1000 };
-    try { return await this.transport.claim(event); }
-    catch (error) { this.error = error.code || error.message; return false; }
+    try {
+      const accepted = await this.transport.claim(event);
+      if (!accepted && !this.conditions.spent.has(rock.id)) this.notice('THE STONE DID NOT WAKE · TRY AGAIN AFTER THE REST',2400);
+      return accepted;
+    }
+    catch (error) { this.error = error.code || error.message; this.notice('THE STONE COULD NOT REACH THE MOUNTAIN · TRY AGAIN',2400); return false; }
     finally { this.pending.delete(rock.id); }
   }
   countdown() {
