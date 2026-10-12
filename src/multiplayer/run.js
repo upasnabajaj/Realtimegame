@@ -13,5 +13,5 @@ export function canReplay(room, uid, now) {
 }
 export function replayRun(room, uid, now) {
   if(!canReplay(room,uid,now))return;
-  return {...room,encounters:{epoch:epochOf(room.encounters)+1}};
+  return {...room,encounters:{epoch:epochOf(room.encounters)+1,resetBy:uid}};
 }
