@@ -155,12 +155,10 @@ const sdk={
   onValue(path,callback){subscriptions.push({path,callback});return()=>calls.push('unsubscribe');},
   onChildAdded(){return()=>calls.push('unsubscribe');},onChildChanged(){return()=>calls.push('unsubscribe');},onChildRemoved(){return()=>calls.push('unsubscribe');},
   onDisconnect:()=>({async remove(){calls.push('arm-disconnect');}}),
-  async set(){calls.push('write');},goOffline(){calls.push('offline');},
+  async set(){calls.push('write');},goOnline(){},async remove(){calls.push('remove');},goOffline(){calls.push('offline');},
 };
-const adapter=new FirebaseTransport({},'test-contract',async()=>[
-  {initializeApp:()=>({}),async deleteApp(){calls.push('delete-app');}},
-  {initializeAuth:()=>({}),inMemoryPersistence:{},async signInAnonymously(){return{user:{uid:'contract'}};}},sdk,
-]);
+const authUser={uid:'contract',isAnonymous:false,providerData:[{providerId:'google.com'}]};
+const adapter=new FirebaseTransport({},'test-contract',{app:{},auth:{currentUser:authUser},user:authUser,dbSDK:sdk});
 await adapter.start({status:()=>{},identity:()=>{},error:e=>{throw e;}},()=>base);
 assert.equal(await adapter.publish(base),false);
 subscriptions.find(s=>s.path==='.info/connected').callback({val:()=>true});
