@@ -1,3 +1,5 @@
+import { GoogleAuth, displayName } from './auth/google-auth.js';
+import { AuthView } from './auth/auth-view.js';
 import { playerColours } from './multiplayer/protocol.js';
 import { Summit } from './summit.js';
 import { Climber } from './climber.js';
@@ -21,7 +23,7 @@ Object.assign(player, playerColours(progress.name));
 world.camera = Math.max(0, player.y - 55);
 const connection = document.createElement('div');
 connection.id = 'connection'; connection.setAttribute('aria-live', 'polite'); document.body.append(connection);
-let multiplayer;
+let multiplayer, signedInUser = null, lifecycle = Promise.resolve(), leaving = false;
 const ui = Object.fromEntries(['notice', 'hint', 'meters', 'marker', 'region'].map(id => [id, document.getElementById(id)]));
 let last = performance.now(), noticeTimer;
 const conditions = new Conditions((type, rock, count) => {
@@ -38,6 +40,7 @@ function locate(event) {
   input.world = world.world(event.clientX, event.clientY);
 }
 canvas.addEventListener('pointerdown', event => {
+  if(!signedInUser || leaving)return;
   event.preventDefault(); canvas.focus(); audio.unlock();
   pointers.add(event.pointerId); canvas.setPointerCapture(event.pointerId); locate(event);
   if (pointers.size > 1) { input.active = false; player.release(); }
@@ -52,7 +55,7 @@ window.addEventListener('blur', cancelInput);
 window.addEventListener('resize', cancelInput);
 canvas.addEventListener('contextmenu', event => event.preventDefault());
 window.addEventListener('keydown', event => {
-  if (event.code === 'Space' && !event.repeat) { event.preventDefault(); audio.unlock(); player.release(); }
+  if (signedInUser && !leaving && event.target === canvas && event.code === 'Space' && !event.repeat) { event.preventDefault(); audio.unlock(); player.release(); }
 });
 
 function showNotice(text, duration) {
@@ -88,9 +91,10 @@ function checkpointNotice(cp, reset) {
 function caught(hold, hard) { world.catch(hold, hard); audio.catch(); multiplayer?.grab(hold); }
 
 function startMultiplayer() {
+  if(!signedInUser || leaving)return;
   if (!firebaseConfig) { connection.textContent = 'local climb'; return; }
   multiplayer = new Multiplayer({
-    transport: new FirebaseTransport(firebaseConfig, sharedRun), player, conditions, progress,
+    transport: new FirebaseTransport(firebaseConfig, sharedRun, {app:auth.app, auth:auth.auth, user:signedInUser, dbSDK:auth.dbSDK}), player, conditions, progress,
     notice: showNotice,
     winner: (record, now) => summit.winner(record, now),
     arrival: record => showNotice(`${record.name} REACHED THE SUMMIT`, 3500),
@@ -100,8 +104,30 @@ function startMultiplayer() {
   });
   multiplayer.start();
 }
-startMultiplayer();
-window.addEventListener('pagehide', () => { multiplayer?.stop(); progress.save(player); });
+const authView = new AuthView(() => {
+  if (!auth.auth) { location.reload(); return; }
+  audio.unlock(); auth.signIn();
+}, async () => {
+  leaving=true;cancelInput();
+  const old=multiplayer;multiplayer=null;
+  if(old)await old.stop();
+  const success=await auth.signOut();leaving=false;
+  if(!success)startMultiplayer();
+});
+const auth = new GoogleAuth(firebaseConfig, user => {
+  signedInUser=user;cancelInput();
+  lifecycle=lifecycle.then(async()=>{
+    const old=multiplayer;multiplayer=null;
+    if(old)await old.stop();
+    if(signedInUser!==user)return;
+    player.reset(0);conditions.reset();resetPresentation();
+    progress.previous=[];progress.winnerSeen=null;
+    if(user){progress.name=displayName(user);startMultiplayer();canvas.focus();}
+    else connection.textContent='';
+  }).catch(()=>{connection.textContent='connection interrupted · please reload';});
+}, (state,message) => authView.render(state,message,auth.user,displayName(auth.user)));
+auth.start();
+window.addEventListener('pagehide', () => { multiplayer?.stop(); multiplayer=null; progress.save(player); });
 window.addEventListener('pageshow', event => { if(event.persisted) startMultiplayer(); });
 document.addEventListener('visibilitychange', () => { if(document.hidden) progress.save(player); });
 window.addEventListener('online', () => {
@@ -142,10 +168,10 @@ function frame(now) {
   const dt = Math.min((now - last) / 1000, .033); last = now;
   input.world = world.world(input.screen.x, input.screen.y);
   const modifiers = conditions.update(dt, player);
-  player.update(dt, input, caught, checkpointNotice, modifiers);
+  if(signedInUser && !leaving)player.update(dt, input, caught, checkpointNotice, modifiers);
   const remotes = multiplayer?.update(now) || [];
   summit.update(dt, player);
-  replay.hidden = !(player.finished && summit.arrival > 9 && (!multiplayer?.online || multiplayer.replayAvailable()));
+  replay.hidden = !(signedInUser && player.finished && summit.arrival > 9 && (!multiplayer?.online || multiplayer.replayAvailable()));
   world.draw(player, input, dt, conditions, remotes);
   const position = world.screen(player.x, player.y);
   ui.hint.style.left = `${Math.min(innerWidth - 190, Math.max(15, position.x - 85))}px`;
