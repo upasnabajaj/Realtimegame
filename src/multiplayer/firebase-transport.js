@@ -1,10 +1,10 @@
-import { claimEncounter, STALE_MS, randomId } from './protocol.js';
-import { finishRun, replayRun } from './run.js';
+import { STALE_MS, randomId } from './protocol.js';
+import { replayRun } from './run.js';
 
 // Only this module knows Firebase. Loading it never blocks the local frame loop.
 export class FirebaseTransport {
-  constructor(config, run, loadSDKs = null) {
-    this.loadSDKs = loadSDKs;
+  constructor(config, run, context = null) {
+    this.context = context;
     this.config = config; this.base = `stillward/runs/${run}`;
     this.connected = false; this.ready = false; this.disposed = false;
     this.listeners = []; this.offset = 0; this.generation = 0;
@@ -14,19 +14,18 @@ export class FirebaseTransport {
     this.callbacks = callbacks; this.initial = initial;
     callbacks.status('connecting');
     try {
-      const [appSDK, authSDK, dbSDK] = await (this.loadSDKs ? this.loadSDKs() : Promise.all([
-        import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
-        import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js'),
-        import('https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js'),
-      ]));
-      if (this.disposed) return;
-      this.sdk = dbSDK; this.appSDK = appSDK;
-      this.app = appSDK.initializeApp(this.config, `climber-${randomId()}`);
-      const auth = authSDK.initializeAuth(this.app, { persistence: authSDK.inMemoryPersistence });
-      const credential = await authSDK.signInAnonymously(auth);
-      if (this.disposed) { await appSDK.deleteApp(this.app); return; }
-      this.uid = credential.user.uid; callbacks.identity(this.uid);
-      this.db = dbSDK.getDatabase(this.app);
+      const context = this.context;
+      if (!context || context.auth.currentUser?.uid !== context.user.uid || context.user.isAnonymous || !context.user.providerData?.some(p=>p.providerId==='google.com')) {
+        throw Object.assign(new Error('Sign in with Google to join.'), {code:'auth/sign-in-required'});
+      }
+      this.sdk = context.dbSDK;
+      this.app = context.app;
+      this.owner = context.user.uid;
+      this.uid = `${this.owner}_${randomId().replaceAll('-','').slice(0,12)}`;
+      callbacks.identity(this.uid);
+      this.db = this.sdk.getDatabase(this.app);
+      this.sdk.goOnline(this.db);
+      const dbSDK = this.sdk;
       const { ref, onValue, onChildAdded, onChildChanged, onChildRemoved } = dbSDK;
       this.self = ref(this.db, `${this.base}/players/${this.uid}`);
       const error = err => { this.failed = true; this.ready = false; callbacks.error(err); callbacks.status('offline'); };
@@ -53,32 +52,37 @@ export class FirebaseTransport {
     // Register server-side removal BEFORE advertising this connection.
     await onDisconnect(this.self).remove();
     if (this.disposed || this.failed || !this.connected || generation !== this.generation) return;
-    await set(this.self, { ...this.initial(), updatedAt: serverTimestamp() });
+    await set(this.self, { ...this.initial(), owner: this.owner, updatedAt: serverTimestamp() });
     if (this.disposed || this.failed || !this.connected || generation !== this.generation) return;
     this.ready = true; this.callbacks.status('online');
   }
   async publish(state) {
-    if (!this.ready || this.disposed) return false;
-    await this.sdk.set(this.self, { ...state, updatedAt: this.sdk.serverTimestamp() });
+    if (!this.ready || this.disposed || this.context.auth.currentUser?.uid !== this.owner) return false;
+    await this.sdk.set(this.self, { ...state, owner: this.owner, updatedAt: this.sdk.serverTimestamp() });
     return true;
   }
   async claim(event) {
-    if (!this.ready || this.disposed) return false;
-    const path = this.sdk.ref(this.db, `${this.base}/encounters`);
+    if (!this.ready || this.disposed || this.context.auth.currentUser?.uid !== this.owner) return false;
+    const path = this.sdk.ref(this.db, `${this.base}/encounters/events/${event.id}`);
     const result = await this.sdk.runTransaction(path,
-      current => this.connected && !this.disposed ? claimEncounter(current, { ...event, startedAt: this.sdk.serverTimestamp() }) : undefined,
+      current => this.connected && !this.disposed && !current ? { ...event, startedAt: this.sdk.serverTimestamp() } : undefined,
       { applyLocally: false });
     return result.committed;
   }
   async finish(arrival) {
-    if(!this.ready || this.disposed)return false;
+    if(!this.ready || this.disposed || this.context.auth.currentUser?.uid !== this.owner)return false;
     await this.publish(this.initial());
-    const result=await this.sdk.runTransaction(this.sdk.ref(this.db,`${this.base}/encounters`),
-      value=>this.connected&&!this.disposed?finishRun(value,{...arrival,at:this.sdk.serverTimestamp()}):undefined,{applyLocally:false});
-    return result.committed;
+    const record={...arrival,at:this.sdk.serverTimestamp()};
+    await this.sdk.runTransaction(this.sdk.ref(this.db,`${this.base}/encounters/finishers/${this.uid}`),
+      value=>this.connected&&!this.disposed&&!value?record:undefined,{applyLocally:false});
+    if(this.disposed || !this.connected)return false;
+    await this.sdk.runTransaction(this.sdk.ref(this.db,`${this.base}/encounters/winner`),
+      value=>this.connected&&!this.disposed&&!value?record:undefined,{applyLocally:false});
+    return true;
   }
+
   async replay() {
-    if(!this.ready || this.disposed)return false;
+    if(!this.ready || this.disposed || this.context.auth.currentUser?.uid !== this.owner)return false;
     const snapshot=await this.sdk.get(this.sdk.ref(this.db,`${this.base}/players`));
     const result=await this.sdk.runTransaction(this.sdk.ref(this.db,`${this.base}/encounters`),
       encounters=>this.connected&&!this.disposed?replayRun({players:snapshot.val(),encounters},this.uid,this.now())?.encounters:undefined,{applyLocally:false});
@@ -94,8 +98,15 @@ export class FirebaseTransport {
   async stop() {
     this.disposed = true; this.ready = false; ++this.generation;
     this.listeners.splice(0).forEach(unsubscribe => unsubscribe());
-    // goOffline executes the already registered server-side disconnect cleanup.
-    if (this.db) this.sdk.goOffline(this.db);
-    if (this.app) await this.appSDK.deleteApp(this.app).catch(() => {});
+    // Remove while credentials still exist, then force the registered disconnect cleanup.
+    // Unique per-tab IDs ensure an old disconnect cannot erase a refreshed tab.
+    if (this.db) {
+      if (this.connected && this.self) {
+        let timer;
+        await Promise.race([this.sdk.remove(this.self).catch(()=>{}),new Promise(resolve=>{timer=setTimeout(resolve,1500);})]);
+        clearTimeout(timer);
+      }
+      this.sdk.goOffline(this.db);
+    }
   }
 }
