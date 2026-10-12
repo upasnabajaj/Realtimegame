@@ -63,6 +63,9 @@ export class FirebaseTransport {
   }
   async claim(event) {
     if (!this.ready || this.disposed || this.context.auth.currentUser?.uid !== this.owner) return false;
+    // Publish the caught grip before the event: rules verify the author holds this rock.
+    await this.publish(this.initial());
+    if(!this.ready || this.disposed)return false;
     const path = this.sdk.ref(this.db, `${this.base}/encounters/events/${event.id}`);
     const result = await this.sdk.runTransaction(path,
       current => this.connected && !this.disposed && !current ? { ...event, startedAt: this.sdk.serverTimestamp() } : undefined,
