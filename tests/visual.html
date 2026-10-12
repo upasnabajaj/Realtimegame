@@ -1,1 +1,7 @@
-<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;overflow:hidden}canvas{width:100vw;height:100vh}</style><canvas></canvas><script type="module">import{World}from '../src/world.js';import{Climber}from '../src/climber.js';const w=new World(document.querySelector('canvas')),p=new Climber();p.y=Number(new URLSearchParams(location.search).get('altitude'))||3500;p.x=0;w.camera=p.y-55;if(p.y>6400){p.finished=true;p.grounded=true;w.reveal=1;}function frame(){w.draw(p,{active:false},1/60);requestAnimationFrame(frame)}frame();</script>
+<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Isolated condition rendering check</title><style>body{margin:0;overflow:hidden}canvas{width:100vw;height:100vh}nav{position:fixed;top:0;left:0;background:#eee;padding:8px;z-index:2}button{margin:3px}</style><nav></nav><canvas></canvas><script type="module">
+import{World}from '../src/world.js';import{Climber}from '../src/climber.js';import{Conditions,CONDITION_TYPES}from '../src/conditions.js';
+const w=new World(document.querySelector('canvas')),p=new Climber(),conditions=new Conditions();p.y=Number(new URLSearchParams(location.search).get('altitude'))||3500;p.x=0;w.camera=p.y-55;
+if(p.y>6400){p.finished=true;p.grounded=true;w.reveal=1;}
+for(const type of CONDITION_TYPES){const b=document.createElement('button');b.textContent=type;b.onclick=()=>conditions.trigger(type);document.querySelector('nav').append(b);}
+let last=performance.now();function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;conditions.update(dt,p);w.draw(p,{active:false},dt,conditions);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+</script>
