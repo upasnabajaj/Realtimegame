@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><title>Local Firebase effect integration</title><pre id="result">Connecting three emulator identities…</pre><script type="module">
+import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+import * as dbSDK from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js';
+import {FirebaseTransport} from '../src/multiplayer/firebase-transport.js';
+import {Multiplayer} from '../src/multiplayer/session.js';
+import {Conditions} from '../src/conditions.js';
+import {Climber} from '../src/climber.js';
+import {holds} from '../src/level.js';
+const output=document.querySelector('#result'),clients=[],apps=[];
+const wait=async test=>{for(let n=0;n<100;n++){if(test())return;await new Promise(r=>setTimeout(r,100));}throw Error('Timed out waiting for Firebase');};
+const check=(yes,message)=>{if(!yes)throw Error(message);output.textContent+='\nPASS '+message;};
+try{
+ if(!['localhost','127.0.0.1'].includes(location.hostname))throw Error('Local emulator only');
+ for(const uid of ['effects-alice','effects-bob','effects-cara']){
+  const app=initializeApp({projectId:'demo-stillward-v2',databaseURL:'https://demo-stillward-v2.firebaseio.com'},uid);apps.push(app);
+  dbSDK.connectDatabaseEmulator(dbSDK.getDatabase(app),'127.0.0.1',9000,{mockUserToken:{sub:uid,firebase:{sign_in_provider:'google.com',identities:{}}}});
+  const user={uid,isAnonymous:false,providerData:[{providerId:'google.com'}]},player=new Climber(),conditions=new Conditions();
+  const progress={name:uid,author(id){this.id=id},owns(id){return id===this.id},save(){}};
+  const transport=new FirebaseTransport({},'mountain-v2',{app,auth:{currentUser:user},user,dbSDK});
+  const game=new Multiplayer({transport,player,conditions,progress});clients.push({game,player,conditions,transport});await game.start();
+ }
+ await wait(()=>clients.every(c=>c.game.online&&c.game.remotes.entries.size===2));check(true,'Three real SDK connections see each other');
+ const a=clients[0],wind=holds.find(h=>h.effect==='WIND');
+ a.player.x=wind.x;a.player.y=wind.y-43;a.player.grips=[wind,null];a.player.grounded=false;
+ check(await a.game.grab(wind),'Atomic wind reservation and event accepted');
+ await wait(()=>clients.every(c=>c.conditions.active.size===1));
+ for(const c of clients)c.conditions.update(.1,c.player);
+ check(clients.every(c=>c.conditions.modifiers.wind!==0),'All three clients including author receive wind');
+ check(clients.every(c=>c.conditions.spent.has(wind.id)),'Spent rock synchronized');
+ check(!await clients[1].game.grab(holds.find(h=>h.effect==='ICE')),'Concurrent different effect blocked by shared rest schedule');
+ a.player.x+=30;await a.transport.publish(a.transport.initial());
+ await wait(()=>clients[1].game.remotes.entries.get(a.game.uid)?.samples.at(-1).x===Math.round(a.player.x*10)/10);
+ check(true,'Movement reaches another client without refresh');
+ const id=a.game.uid;await a.game.stop();await wait(()=>!clients[1].game.remotes.entries.has(id));check(true,'Leaving removes remote presence');
+ output.textContent+='\nCOMPLETE — emulator identities, not real Google OAuth accounts.';
+}catch(error){output.textContent+='\nFAIL '+error.message;}
+finally{for(const c of clients)await c.game.stop();for(const app of apps)await deleteApp(app);}
+</script>

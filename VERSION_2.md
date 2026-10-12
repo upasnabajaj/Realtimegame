@@ -11,7 +11,7 @@ No publishing or live database-rule deployment was performed for this update. Th
 - Google popup authentication, per-tab session persistence, loading/cancellation/error feedback, local name/photo and sign-out.
 - Multiplayer starts only after Google authentication. Presence is removed before sign-out; refreshed tabs use fresh session IDs and restart at the base.
 - Version 2 uses `stillward/runs/mountain-v2`, separate from V1. Movement stays local with throttled updates and remote interpolation.
-- Atomic per-rock events preserve activator immunity and overlapping conditions. Dormant state comes from the same event record; concurrent grabs cannot produce two winners.
+- Atomic per-rock events now affect all connected players, including the activator, as requested in the environmental update. A shared reservation enforces a 12-second rest after each complete event. Dormant state comes from the same event record; concurrent grabs cannot produce two winners.
 - Remote colours now use session identity, so players with identical names are still distinguished. Summit retry handles a missing winner record.
 - Existing mountain, routes, climbing, conditions, checkpoints and ending are retained.
 
@@ -32,7 +32,7 @@ These are access-control rules, not a server-authoritative anti-cheat system: cl
 3. Review and publish the V2 rules in Realtime Database → Rules only when ready. A denied connection should remain denied; do not loosen rules to make an error disappear.
 4. Run `npm test`, then `npm run build`. Preview the built folder through HTTP. All application imports/assets use relative paths, so `/Realtimegame/` is supported.
 5. After your approval, publish the **contents of `dist/`** through the repository's Pages deployment process. Do not publish tests or development source as the production entry point. Check GitHub Actions/Pages for deployment completion.
-6. Open the deployed URL in two separate browser profiles using different Google accounts. Verify names/photos, different climber colours, movement, event immunity/overlap, disconnect/reconnect, sign-out, refresh at base, summit and replay. If the OAuth consent screen is restricted to testing users, add both test accounts there.
+6. Open the deployed URL in two separate browser profiles using different Google accounts. Verify names/photos, different climber colours, movement, all-player events and cooldown timing, disconnect/reconnect, sign-out, refresh at base, summit and replay. If the OAuth consent screen is restricted to testing users, add both test accounts there.
 
 ## Verification and remaining acceptance checks
 
@@ -43,3 +43,13 @@ Passed real local Realtime Database emulator checks: Google-only access, anonymo
 Browser inspection: production sign-in screen loads the live Firebase SDK without console errors; cancelling returns a usable sign-in button. Phone layout is inspected with the 390×844 fixture in `tests/responsive.html`. Authentication success/profile rendering and sign-out are covered by SDK contract tests, not by two real signed-in browser accounts.
 
 **Not yet verified:** completed real Google sign-in with two different accounts, live V2 database acceptance under the proposed rules, actual phone touch hardware, and the deployed V2 GitHub Pages URL. These require the approved rules/publish steps and account access. Do not treat simulated multiplayer tests as live multi-account acceptance.
+
+## Environmental update (local, not deployed)
+
+Wind lasts 15 seconds with a 35% upward travel reduction at full strength. Falling rocks run for 20 seconds with repeated warned volleys and real grip-breaking hits. Downward Pull replaces Darkness for 8 seconds; the spotlight has been removed. Frozen lasts 12 seconds and affects all 453 holds, with a one-second same-stone grip limit. The countdown reuses the existing notice text. The controls, Google authentication and page layout are unchanged.
+
+This request supersedes the previous activator-immunity behavior: shared events now affect their author as well. A 12-second rest separates normal shared events. A special stone grabbed during an event/rest stays unused and can be grabbed again afterward. Tests may deliberately stack conditions; normal multiplayer activation is serialized. Server timestamps determine expiry and the rest window, including after refresh and background suspension.
+
+Rebuild and publish the updated game and updated `database.v2.rules.json` together after approval. The rules add an atomic `encounters/slot` reservation and require each immutable event to match it. Without the new rules, activation is correctly rejected. Do not make the database publicly writable to bypass that rejection. Failed reservations are recoverable; an abandoned uncommitted reservation expires after five seconds. Replay clears the slot along with old events.
+
+Additional checks cover all 453 holds being reachable/catchable, same-stone frost timer abuse, late rockfall spawning, real fall impulses, all-player delivery, server-enforced event spacing, and expired conditions. Live Google-account multiplayer still requires final acceptance after the approved rules update; no production writes or deployment were performed.
