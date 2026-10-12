@@ -85,15 +85,12 @@ export function drawAtmosphere(world, player, conditions) {
     }
   }
   c.globalAlpha = 1;
-  if (m.darkness > .001) {
-    const point = world.screen(player.x, player.y + 18);
-    const radius = 105 * world.scale;
-    const glow = c.createRadialGradient(point.x, point.y, 28 * world.scale, point.x, point.y, radius * 1.7);
-    glow.addColorStop(0, `rgba(16,24,38,${m.darkness * .06})`);
-    glow.addColorStop(.46, `rgba(16,24,38,${m.darkness * .25})`);
-    glow.addColorStop(.73, `rgba(12,20,33,${m.darkness * .86})`);
-    glow.addColorStop(1, `rgba(10,17,29,${m.darkness * .97})`);
-    c.fillStyle = glow; c.fillRect(0, 0, w, h);
+  if (m.pull > .001) {
+    c.strokeStyle = '#d7d2bf'; c.globalAlpha = m.pull * .18;
+    for (let i=0;i<18;i++) {
+      const x=(i*173)%w, y=(i*91+world.time*105)%h;
+      c.beginPath();c.moveTo(x,y);c.lineTo(x+2,y+13);c.stroke();
+    }
   }
   c.restore();
 }

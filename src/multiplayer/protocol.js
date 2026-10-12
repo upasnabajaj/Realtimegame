@@ -14,6 +14,8 @@ export function randomId() {
   return Date.now().toString(16)+Math.random().toString(16).slice(2);
 }
 export const VERSION = 2;
+export const EVENT_GAP_MS = 12000;
+export const nextEventAt = state => Math.max(0,...Object.values(state?.events || {}).map(e => e.startedAt + e.duration + EVENT_GAP_MS), state?.slot ? state.slot.startedAt + (state?.events?.[state.slot.id] ? state.slot.duration + EVENT_GAP_MS : 5000) : 0);
 export const STALE_MS = 45000;
 const finite = (n, lo, hi) => Number.isFinite(n) && n >= lo && n <= hi;
 const rounded = n => Math.round(n * 10) / 10;
@@ -44,7 +46,7 @@ export function validEvent(e, now) {
     && finite(e.startedAt, 0, now + 2000) && finite(e.requestedAt, e.startedAt - 3000, e.startedAt + 2000);
 }
 export function claimEncounter(current, event) {
-  if ((current?.epoch||0)!==(event.epoch||0))return;
+  if ((current?.epoch||0)!==(event.epoch||0) || event.startedAt < nextEventAt(current))return;
   if (current?.rocks?.[event.rock] || current?.events?.[event.id]) return;
   return { ...current, epoch:event.epoch||0, rocks: { ...current?.rocks, [event.rock]: event.id }, events: { ...current?.events, [event.id]: event } };
 }

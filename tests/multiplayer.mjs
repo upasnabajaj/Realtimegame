@@ -84,33 +84,29 @@ await Promise.all([a.game.start(),b.game.start(),c.game.start()]);
 assert.equal(a.game.remotes.entries.size,2);assert.equal(b.game.remotes.entries.size,2);
 const winds=holds.filter(r=>r.effect==='WIND'), low=holds.find(r=>r.effect==='LOW_GRAVITY');
 assert(await a.game.grab(winds[0]));
-assert.equal(a.conditions.active.size,0,'Activator is immune');
+assert.equal(a.conditions.active.size,1,'The activator experiences the event too');
 assert.equal(b.conditions.active.size,1);assert.equal(c.conditions.active.size,1);
+assert.equal(await b.game.grab(low),false,'Active events prevent new activations');
+tick(h,[a,b,c],15.1);
+for(const member of [a,b,c])assert.equal(member.conditions.active.size,0);
+assert.equal(await b.game.grab(low),false,'Twelve seconds of quiet follow the entire event');
+assert(b.game.countdown().includes('NEXT EVENT'));
+tick(h,[a,b,c],12);
 assert(await b.game.grab(low));
-assert.deepEqual([...a.conditions.active.values()].map(e=>e.type),['LOW_GRAVITY']);
-assert.deepEqual([...b.conditions.active.values()].map(e=>e.type),['WIND']);
-assert.equal(c.conditions.active.size,2);
-assert(c.messages.some(s=>s.includes(a.progress.name)&&s.includes('WIND')));
-assert(await b.game.grab(winds[1]));
-assert.equal(a.conditions.active.size,2,'Triggering wind earlier gives no blanket wind immunity');
-assert.equal(b.conditions.active.size,1,'B is immune only to its own wind');
-assert.equal(c.conditions.active.size,3,'Same-type events retain independent authors and expiry');
-tick(h,[a,b,c],1);
-assert(c.conditions.modifiers.wind!==0 && c.conditions.modifiers.gravity<1);
-assert.equal(b.conditions.modifiers.gravity,1);
-assert(a.conditions.spent.has(low.id)&&c.conditions.spent.has(low.id));
+for(const member of [a,b,c])assert.equal(member.conditions.active.size,1);
+tick(h,[a,b,c],20.1);
 const raceRock=holds.find(r=>r.effect==='ICE');
 const winners=await Promise.all([a.game.grab(raceRock),b.game.grab(raceRock),c.game.grab(raceRock)]);
 assert.equal(winners.filter(Boolean).length,1,'Exactly one concurrent rock claimant wins');
-assert.equal(Object.keys(h.encounters.events).length,4);
+assert.equal(Object.keys(h.encounters.events).length,3);
 const before=c.conditions.active.size;
 c.game.receive(h.encounters.events[`rock-${raceRock.id}`]);assert.equal(c.conditions.active.size,before,'Replayed event is idempotent');
 // All seven event types are delivered using the exact existing condition system.
 for(const type of Object.keys(DEFINITIONS)) {
   const hub=new Hub(),one=client(hub),two=client(hub);await one.game.start();await two.game.start();
   const rock=holds.find(r=>r.effect===type);await one.game.grab(rock);
-  assert.equal(one.conditions.active.size,0);assert.equal(two.conditions.active.size,1);
-  tick(hub,[one,two],12);assert.deepEqual(two.conditions.modifiers,NORMAL);assert.equal(two.conditions.active.size,0);
+  assert.equal(one.conditions.active.size,1);assert.equal(two.conditions.active.size,1);
+  tick(hub,[one,two],DEFINITIONS[type].duration+.1);assert.deepEqual(two.conditions.modifiers,NORMAL);assert.equal(two.conditions.active.size,0);
 }
 // Refresh restarts only this player, retaining immunity to its own active event.
 const refreshHub=new Hub(),old=client(refreshHub),observer=client(refreshHub);await old.game.start();await observer.game.start();
@@ -119,15 +115,15 @@ await old.game.grab(winds[0]);old.progress.save(old.player);const oldID=old.game
 await old.game.stop();assert(!observer.game.remotes.entries.has(oldID));
 const refreshed=client(refreshHub,old.session,old.local,true);await refreshed.game.start();
 assert.notEqual(refreshed.game.uid,oldID);assert.equal(refreshed.progress.name,old.progress.name);
-assert(refreshed.player.grips.every(g=>g===null));assert.equal(refreshed.player.checkpoint,0);assert.equal(refreshed.player.y,28);assert.equal(observer.conditions.active.size,1);assert.equal(refreshed.conditions.active.size,0);
+assert(refreshed.player.grips.every(g=>g===null));assert.equal(refreshed.player.checkpoint,0);assert.equal(refreshed.player.y,28);assert.equal(observer.conditions.active.size,1);assert.equal(refreshed.conditions.active.size,1);
 assert.equal(observer.game.remotes.entries.size,1,'Refresh does not leave a second avatar');
 const anotherTab=client(refreshHub,old.session,old.local,false);await anotherTab.game.start();
 assert(!anotherTab.progress.owns(oldID),'A newly opened tab does not inherit old author immunity');
 assert.equal(anotherTab.conditions.active.size,1);
 // Disconnection never blocks local physics or queues an offline activation.
 b.transport.disconnect();assert(!a.game.remotes.entries.has(b.game.uid));
-const offlineRock=holds.find(r=>r.effect==='DARKNESS');assert.equal(await b.game.grab(offlineRock),false);
-await a.game.grab(offlineRock);h.time+=12000;await b.transport.reconnect();
+const offlineRock=holds.find(r=>r.effect==='DOWNWARD_PULL');assert.equal(await b.game.grab(offlineRock),false);
+tick(h,[a,b,c],25);assert(await a.game.grab(offlineRock));h.time+=12000;await b.transport.reconnect();
 assert(b.conditions.spent.has(offlineRock.id));tick(h,[a,b,c],.1);
 assert.equal(b.conditions.active.size,0,'Expired effects are not replayed on reconnect');
 // Throttled movement and heartbeat, interpolated positions, NaN rejection.
@@ -167,7 +163,7 @@ assert(calls.indexOf('arm-disconnect')<calls.indexOf('write'));assert(adapter.re
 subscriptions.find(s=>s.path==='.info/connected').callback({val:()=>false});
 assert.equal(await adapter.publish(base),false);
 await adapter.stop();assert(calls.includes('offline'));assert(calls.filter(c=>c==='unsubscribe').length===6);
-console.log('Multiplayer: three-player immunity, seven effects, atomic races, same-type overlap, replay/expiry, refresh, separate tabs, disconnect/reconnect, interpolation, throttling, and Firebase presence lifecycle pass.');
+console.log('Multiplayer: three-player global events, seven effects, atomic races, shared event spacing, replay/expiry, refresh, separate tabs, disconnect/reconnect, interpolation, throttling, and Firebase presence lifecycle pass.');
 // Tab suspension must not extend a shared condition or leave old falling stones.
 const suspended = new Conditions();let wall=100000;
 suspended.trigger('ROCKFALL',null,{id:'suspended-rockfall',startedAt:wall,clock:()=>wall,direction:1});
@@ -194,8 +190,8 @@ assert.equal(restarts.filter(Boolean).length,1);
 for(const p of finishers){assert.equal(p.player.epoch,1);assert.equal(p.player.checkpoint,0);assert(!p.player.finished);assert.equal(p.conditions.spent.size,0);assert.equal(p.conditions.active.size,0);}
 assert.equal(claimEncounter(endHub.encounters,{...h.encounters.events[`rock-${winds[0].id}`],epoch:0}),undefined);
 assert(await finishers[0].game.grab(winds[0]),'New run re-arms special rocks');
-assert.equal(finishers[0].conditions.active.size,0);assert.equal(finishers[1].conditions.active.size,1);
-console.log('Shared summit winner, waiting for finishers, concurrent replay, epoch reset and re-armed rock immunity pass.');
+assert.equal(finishers[0].conditions.active.size,1);assert.equal(finishers[1].conditions.active.size,1);
+console.log('Shared summit winner, waiting for finishers, concurrent replay, epoch reset and re-armed global rock events pass.');
 
 const appearanceHub=new Hub(),group=[client(appearanceHub),client(appearanceHub),client(appearanceHub)];
 for(const member of group)await member.game.start();

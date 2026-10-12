@@ -1,16 +1,17 @@
 import { rand } from './level.js';
 
-export const CONDITION_TYPES = ['WIND', 'SLOW', 'SPEED', 'LOW_GRAVITY', 'DARKNESS', 'ICE', 'ROCKFALL'];
+export const CONDITION_TYPES = ['WIND', 'SLOW', 'SPEED', 'LOW_GRAVITY', 'DOWNWARD_PULL', 'ICE', 'ROCKFALL'];
 export const DEFINITIONS = {
-  WIND: { duration: 8, color: '#c7d4bc' },
+  WIND: { duration: 15, color: '#c7d4bc' },
   SLOW: { duration: 6, color: '#c7b8d1' },
   SPEED: { duration: 6, color: '#e8c68d' },
   LOW_GRAVITY: { duration: 8, color: '#c6ded7' },
-  DARKNESS: { duration: 7, color: '#b7bed6' },
-  ICE: { duration: 9, color: '#d8edf0' },
-  ROCKFALL: { duration: 7, color: '#d5ad8c' },
+  DOWNWARD_PULL: { duration: 8, color: '#b7bed6' },
+  ICE: { duration: 12, color: '#d8edf0' },
+  ROCKFALL: { duration: 20, color: '#d5ad8c' },
 };
-export const NORMAL = Object.freeze({ tempo: 1, gravity: 1, spring: 1, damping: 1, wind: 0, float: 0, darkness: 0, ice: 0, rockfall: 0 });
+export const conditionLabel = type => type === 'ICE' ? 'FROZEN' : type === 'ROCKFALL' ? 'FALLING ROCKS' : type.replaceAll('_', ' ');
+export const NORMAL = Object.freeze({ upward: 1, tempo: 1, gravity: 1, spring: 1, damping: 1, wind: 0, float: 0, pull: 0, ice: 0, rockfall: 0 });
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
 const smooth = value => { const x = clamp(value, 0, 1); return x * x * (3 - 2 * x); };
 
@@ -51,7 +52,7 @@ export class Conditions {
       age, duration: DEFINITIONS[type].duration,
       start: previous?.strength || 0, strength: previous?.strength || 0,
       direction: event?.direction || previous?.direction || (++this.serial % 2 ? 1 : -1),
-      wave: event ? Math.floor(age / 1.5) - 1 : -1,
+      wave: event ? Math.floor(age / .8) - 1 : -1,
     });
     this.onActivate(type, rock, this.active.size);
     return true;
@@ -69,7 +70,7 @@ export class Conditions {
     }
   }
 
-  slippery(rock) { return !!rock && rock.id % 3 !== 0; }
+  slippery(rock) { return !!rock; }
 
   update(dt, player) {
     this.time += dt;
@@ -84,8 +85,8 @@ export class Conditions {
       if (effect.age >= effect.duration) { this.active.delete(key); continue; }
       const attack = effect.start + (1 - effect.start) * smooth(effect.age / .65);
       effect.strength = (effect.releaseAge === undefined ? attack : effect.releaseStart) * smooth((effect.duration - effect.age) / 1.4);
-      if (type === 'ROCKFALL' && effect.releaseAge === undefined && effect.age < 4.8) {
-        const wave = Math.floor(effect.age / 1.5);
+      if (type === 'ROCKFALL' && effect.releaseAge === undefined && effect.age < effect.duration) {
+        const wave = Math.floor(effect.age / .8);
         if (wave > effect.wave) { effect.wave = wave; this.spawnWave(player, wave, effect); }
       }
     }
@@ -94,35 +95,44 @@ export class Conditions {
     const slow = strength('SLOW'), speed = strength('SPEED'), floating = strength('LOW_GRAVITY');
     const gust = matching('WIND')[0];
     this.modifiers = {
+      upward: 1 - strength('WIND') * .35,
       tempo: clamp((1 - slow * .58) * (1 + speed * 1.1), .42, 2.1),
       gravity: 1 - floating * .88,
-      spring: clamp((1 - slow * .48) * (1 + speed * .6) * (1 - floating * .55) * (1 - strength('WIND') * .55), .2, 1.6),
+      spring: clamp((1 - slow * .48) * (1 + speed * .6) * (1 - floating * .55), .2, 1.6),
       damping: clamp((1 + slow * .16) * (1 - speed * .52) * (1 - floating * .5), .24, 1.16),
-      wind: gust ? gust.direction * gust.strength * (700 + 280 * Math.sin((gust.clock ? gust.age : this.time) * 2.6) ** 2) : 0,
+      wind: gust ? gust.direction * gust.strength * (140 + 65 * Math.sin((gust.clock ? gust.age : this.time) * 2.6) ** 2) : 0,
       float: floating,
-      darkness: strength('DARKNESS'), ice: strength('ICE'), rockfall: strength('ROCKFALL'),
+      pull: strength('DOWNWARD_PULL'), ice: strength('ICE'), rockfall: strength('ROCKFALL'),
     };
     const grip = player.grips.find(Boolean);
-    if (grip?.id !== this.gripId) { this.gripId = grip?.id ?? null; this.gripAge = 0; }
-    if (grip && this.slippery(grip) && this.modifiers.ice > .15) {
-      this.gripAge += dt * this.modifiers.ice;
-      player.slip = clamp(this.gripAge / 2.25, 0, 1);
-      if (this.gripAge >= 2.25) {
-        player.release();
-        player.cooldown = .6;
-        this.gripAge = 0;
+    // Releasing/re-catching the same stone cannot refresh its frozen grip budget.
+    const frozen = [...this.active.values()].some(e => e.type === 'ICE' && e.releaseAge === undefined);
+    if (frozen) {
+      if (grip && grip.id !== this.gripId) { this.gripId = grip.id; this.gripAge = 0; }
+      if (grip) {
+        this.gripAge += dt;
+        player.slip = clamp(this.gripAge, 0, 1);
+        if (this.gripAge >= 1) {
+          player.release(); player.vy = Math.min(player.vy, -160); player.cooldown = .3;
+        }
+      } else player.slip = 0;
+    } else { this.gripId = null; this.gripAge = 0; player.slip = 0; }
+    // A short, recoverable loss of support starts the eight-second downward slide.
+    for (const effect of this.active.values()) if (effect.type === 'DOWNWARD_PULL' && !effect.pulled) {
+      effect.pulled = true;
+      if (!player.grounded && !player.finished && !player.mantle) {
+        player.release(); player.vy = Math.min(player.vy, -145); player.cooldown = .28;
       }
-    } else { this.gripAge = Math.max(0, this.gripAge - dt * 3); player.slip = 0; }
+    }
     this.updateDebris(dt, player);
     return this.modifiers;
   }
 
   spawnWave(player, wave, effect = {}) {
-    // One telegraphed corridor aims at the current position; its neighbors leave
-    // generous escape space. A hit gives a shove, never an unavoidable instant fall.
+    // Repeated warned volleys leave escape corridors. Only one hit can land per recovery window.
     for (let i = -1; i <= 1; i++) {
       this.debris.push({
-        x: player.x + i * 88, y: player.y + 220 + Math.abs(i) * 35,
+        x: player.x + i * 76 + (i ? (rand(wave * 13 + i) - .5) * 40 : 0), y: player.y + 220 + Math.abs(i) * 35,
         vx: (rand(wave * 7 + i + this.serial) - .5) * 16, vy: 0,
         warning: 1.05 + Math.abs(i) * .12, life: 5.5,
         clock: effect.clock, expiresAt: effect.startedAt + effect.duration * 1000,
@@ -145,11 +155,12 @@ export class Conditions {
       const cross = oldY >= player.y - 20 && stone.y <= player.y + 30;
       if (!stone.hit && cross && Math.abs(stone.x - player.x) < stone.radius + 11 && !player.grounded && this.hitCooldown === 0) {
         stone.hit = true;
-        this.hitCooldown = 1.2;
+        this.hitCooldown = 1.6;
         player.vx = clamp(player.vx + (stone.x < player.x ? 180 : -180), -230, 230);
-        player.vy = Math.max(-300, player.vy - 120);
+        player.release();
+        player.vy = Math.min(-260, Math.max(-480, player.vy - 180));
         player.pending = null;
-        player.cooldown = Math.max(player.cooldown, .4);
+        player.cooldown = Math.max(player.cooldown, .42);
         player.catchPulse = .55;
       }
     }

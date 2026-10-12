@@ -36,7 +36,14 @@ await allowed(`${path}/players/alice_tab`,'PATCH',{x:wind.x,y:wind.y-43,left:win
 const event={id:`rock-${wind.id}`,rock:wind.id,type:'WIND',author:'alice_tab',name:'Alice',requestedAt:Date.now(),startedAt:{'.sv':'timestamp'},duration:DEFINITIONS.WIND.duration*1000,epoch:0};
 const eventPath=`${path}/encounters/events/${event.id}`;
 await denied(eventPath,'PUT',event,bob);
+await denied(eventPath,'PUT',event,alice); // No shared reservation yet.
+await allowed(`${path}/encounters/slot`,'PUT',{id:event.id,author:event.author,epoch:0,startedAt:{'.sv':'timestamp'},duration:event.duration},alice);
+event.startedAt=await (await request(`${path}/encounters/slot/startedAt`,'GET',undefined,alice)).json();
 await allowed(eventPath,'PUT',event,alice);
+const nextRock=holds.find(h=>h.effect==='ICE');
+await denied(`${path}/encounters/slot`,'PUT',{id:`rock-${nextRock.id}`,author:'bob_tab',epoch:0,startedAt:{'.sv':'timestamp'},duration:12000},bob);
+await denied(`${path}/encounters/slot`,'DELETE',undefined,alice); // An active event cannot be cancelled.
+
 await denied(eventPath,'PUT',{...event,type:'SPEED'},alice);
 await denied(eventPath,'DELETE',undefined,alice);
 await denied(`${path}/encounters`,'PUT',{epoch:0},alice);
@@ -56,6 +63,8 @@ await denied(`${path}/encounters`,'PUT',{epoch:1,resetBy:'alice_tab'},bob);
 await allowed(`${path}/encounters`,'PUT',{epoch:1,resetBy:'alice_tab'},alice);
 await denied(eventPath,'PUT',event,alice); // Old epoch cannot leak into replay.
 await allowed(`${path}/players/alice_tab`,'PATCH',{epoch:1,y:wind.y-43,left:wind.id,checkpoint:0,updatedAt:{'.sv':'timestamp'}},alice);
+await allowed(`${path}/encounters/slot`,'PUT',{id:event.id,author:event.author,epoch:1,startedAt:{'.sv':'timestamp'},duration:event.duration},alice);
+event.startedAt=await (await request(`${path}/encounters/slot/startedAt`,'GET',undefined,alice)).json();
 await allowed(eventPath,'PUT',{...event,epoch:1,requestedAt:Date.now()},alice);
 await allowed(`${path}/players/alice_tab`,'DELETE',undefined,alice);
 await denied(`${path}/players/alice_other`,'DELETE',undefined,bob);

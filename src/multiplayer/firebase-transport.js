@@ -1,4 +1,4 @@
-import { STALE_MS, randomId } from './protocol.js';
+import { STALE_MS, randomId, EVENT_GAP_MS } from './protocol.js';
 import { replayRun } from './run.js';
 
 // Only this module knows Firebase. Loading it never blocks the local frame loop.
@@ -41,7 +41,7 @@ export class FirebaseTransport {
       this.listeners.push(onChildAdded(players, receive, error), onChildChanged(players, receive, error),
         onChildRemoved(players, snapshot => callbacks.remove(snapshot.key), error));
       this.listeners.push(onValue(ref(this.db, `${this.base}/encounters`), snapshot => {
-        const state=snapshot.val()||{epoch:0};
+        const state=snapshot.val()||{epoch:0}; this.encounters=state;
         if(callbacks.encounters)callbacks.encounters(state);
         else {for(const id of Object.keys(state.rocks||{}))callbacks.rock(Number(id));for(const event of Object.values(state.events||{}))callbacks.event(event);}
       }, error));
@@ -66,12 +66,25 @@ export class FirebaseTransport {
     // Publish the caught grip before the event: rules verify the author holds this rock.
     await this.publish(this.initial());
     if(!this.ready || this.disposed)return false;
-    const path = this.sdk.ref(this.db, `${this.base}/encounters/events/${event.id}`);
-    const result = await this.sdk.runTransaction(path,
-      current => this.connected && !this.disposed && !current ? { ...event, startedAt: this.sdk.serverTimestamp() } : undefined,
-      { applyLocally: false });
-    return result.committed;
+    const slotRef = this.sdk.ref(this.db, `${this.base}/encounters/slot`);
+    const reservation = await this.sdk.runTransaction(slotRef, current => {
+      if (!this.connected || this.disposed || (current && this.now() < current.startedAt + (this.encounters?.events?.[current.id] ? current.duration + EVENT_GAP_MS : 5000))) return;
+      return {id:event.id, author:this.uid, epoch:event.epoch, startedAt:this.sdk.serverTimestamp(), duration:event.duration};
+    }, {applyLocally:false});
+    if (!reservation.committed) return false;
+    const slot = reservation.snapshot.val();
+    try {
+      const path = this.sdk.ref(this.db, `${this.base}/encounters/events/${event.id}`);
+      const result = await this.sdk.runTransaction(path,
+        current => this.connected && !this.disposed && !current ? { ...event, startedAt:slot.startedAt } : undefined,
+        { applyLocally: false });
+      if (result.committed) return true;
+    } catch (error) { this.callbacks.error(error); }
+    // Failed catches must not consume a full event/cooldown. Never clear somebody else's slot.
+    await this.sdk.runTransaction(slotRef, current => current?.author === this.uid && current?.startedAt === slot.startedAt ? null : undefined, {applyLocally:false}).catch(()=>{});
+    return false;
   }
+
   async finish(arrival) {
     if(!this.ready || this.disposed || this.context.auth.currentUser?.uid !== this.owner)return false;
     await this.publish(this.initial());
